@@ -15,16 +15,16 @@ Unlike simple text extractors, xlsx2txt preserves everything — formulas, style
 
 | Feature | Status |
 |---------|--------|
-| Cell values & formulas | ✅ |
-| Styles (fonts, colors, borders) | ✅ |
-| Merged cells | ✅ |
-| Named ranges | ✅ |
-| Comments | ✅ |
-| Images | ✅ |
-| Charts | ✅ |
-| VBA macros (.xlsm) | ✅ |
-| Conditional formatting | ✅ |
-| Data validation | ✅ |
+| Cell values & formulas | 🚧 |
+| Styles (fonts, colors, borders) | 🚧 |
+| Merged cells | 🚧 |
+| Named ranges | 🚧 |
+| Comments | 🚧 |
+| Images | 🚧 |
+| Charts | 🚧 |
+| VBA macros (.xlsm) | 🚧 |
+| Conditional formatting | 🚧 |
+| Data validation | 🚧 |
 
 ## Installation
 
