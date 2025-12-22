@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xlsx2txt"
-version = "0.0.5"
+version = "0.0.6"
 description = "Bidirectional Excel converter (xlsx ↔ text) for Git version control"
 readme = "README.md"
 license = {text = "BSD-3-Clause"}

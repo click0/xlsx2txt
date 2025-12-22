@@ -2,9 +2,11 @@
 
 from pathlib import Path
 from typing import Any, Optional, Union
+from datetime import datetime
 
 from openpyxl import load_workbook
 from openpyxl.cell.cell import Cell as OpenpyxlCell
+from openpyxl.utils import get_column_letter
 
 from xlsx2txt.models import (
     Cell,
@@ -14,6 +16,11 @@ from xlsx2txt.models import (
     BorderStyle,
     BorderSide,
     AlignmentStyle,
+    Sheet,
+    SheetDimensions,
+    ColumnDimension,
+    RowDimension,
+    CellData,
 )
 
 
@@ -180,3 +187,124 @@ def read_cell_style(
     """
     cell = read_cell(path, coordinate, sheet_name)
     return cell.style
+
+
+def _get_cell_type(cell: OpenpyxlCell) -> str:
+    """Determine cell type code."""
+    if cell.value is None:
+        return "n"
+    if isinstance(cell.value, bool):
+        return "b"
+    if isinstance(cell.value, datetime):
+        return "d"
+    if isinstance(cell.value, (int, float)):
+        return "n"
+    if cell.data_type == "e":
+        return "e"
+    return "s"
+
+
+def _get_cell_value(cell: OpenpyxlCell) -> Any:
+    """Get cell value, converting datetime to ISO string."""
+    if isinstance(cell.value, datetime):
+        return cell.value.isoformat()
+    return cell.value
+
+
+def _get_formula(cell: OpenpyxlCell) -> Optional[str]:
+    """Extract formula from cell if present."""
+    if cell.data_type == "f":
+        return cell.value if isinstance(cell.value, str) else None
+    if hasattr(cell, 'value') and isinstance(cell.value, str) and cell.value.startswith('='):
+        return cell.value
+    return None
+
+
+def read_sheet(
+    path: Union[str, Path],
+    sheet_name: Optional[str] = None,
+) -> Sheet:
+    """
+    Read entire sheet from an Excel file.
+
+    Args:
+        path: Path to the Excel file.
+        sheet_name: Sheet name. If None, uses active sheet.
+
+    Returns:
+        Sheet object with all data.
+
+    Raises:
+        FileNotFoundError: If file does not exist.
+        ValueError: If sheet_name is invalid.
+    """
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {path}")
+
+    wb = load_workbook(path, data_only=False)
+
+    if sheet_name:
+        if sheet_name not in wb.sheetnames:
+            raise ValueError(f"Sheet not found: {sheet_name}")
+        ws = wb[sheet_name]
+    else:
+        ws = wb.active
+
+    # Get sheet ID
+    sheet_id = 1
+    for idx, name in enumerate(wb.sheetnames, 1):
+        if name == ws.title:
+            sheet_id = idx
+            break
+
+    # Build dimensions
+    dimensions = SheetDimensions(
+        used_range=ws.dimensions if ws.dimensions else None,
+        default_row_height=ws.sheet_format.defaultRowHeight or 15.0,
+        default_col_width=ws.sheet_format.defaultColWidth or 8.43,
+    )
+
+    # Column dimensions
+    for col_letter, col_dim in ws.column_dimensions.items():
+        if col_dim.width is not None or col_dim.hidden:
+            dimensions.columns[col_letter] = ColumnDimension(
+                width=col_dim.width or 8.43,
+                hidden=col_dim.hidden or False,
+                style=col_dim.style if hasattr(col_dim, 'style') else None,
+            )
+
+    # Row dimensions
+    for row_num, row_dim in ws.row_dimensions.items():
+        if row_dim.height is not None or row_dim.hidden:
+            dimensions.rows[str(row_num)] = RowDimension(
+                height=row_dim.height or 15.0,
+                hidden=row_dim.hidden or False,
+                style=row_dim.style if hasattr(row_dim, 'style') else None,
+            )
+
+    # Merged cells
+    merged_cells = [str(merged) for merged in ws.merged_cells.ranges]
+
+    # Cells with data
+    cells = {}
+    for row in ws.iter_rows():
+        for cell in row:
+            if cell.value is not None or cell.data_type == "f":
+                coord = cell.coordinate
+                formula = _get_formula(cell)
+                
+                cells[coord] = CellData(
+                    v=_get_cell_value(cell) if formula is None else cell.value,
+                    t=_get_cell_type(cell),
+                    s=cell.style_id if hasattr(cell, 'style_id') and cell.style_id else None,
+                    f=formula,
+                )
+
+    return Sheet(
+        sheet_id=sheet_id,
+        name=ws.title,
+        dimensions=dimensions,
+        merged_cells=merged_cells,
+        cells=cells,
+    )
