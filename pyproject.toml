@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xlsx2txt"
+version = "0.0.5"
+description = "Bidirectional Excel converter (xlsx ↔ text) for Git version control"
+readme = "README.md"
+license = {text = "BSD-3-Clause"}
+authors = [
+    {name = "Vladyslav V. Prodan", email = "vladyslav.prodan@gmail.com"}
+]
+keywords = ["excel", "xlsx", "json", "git", "version-control", "converter"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Office Suites",
+    "Topic :: Software Development :: Version Control :: Git",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "openpyxl>=3.1.0",
+    "click>=8.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+xlsx2txt = "xlsx2txt.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/click0/xlsx2txt"
+Repository = "https://github.com/click0/xlsx2txt"
+Issues = "https://github.com/click0/xlsx2txt/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
