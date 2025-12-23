@@ -9,7 +9,7 @@ description = "Bidirectional Excel converter (xlsx ↔ text) for Git version con
 readme = "README.md"
 license = {text = "BSD-3-Clause"}
 authors = [
-    {name = "Vladyslav V. Prodan", email = "vladyslav.prodan@gmail.com"}
+    {name = "Vladyslav V. Prodan", email = "admin@support.od.ua"}
 ]
 keywords = ["excel", "xlsx", "json", "git", "version-control", "converter"]
 classifiers = [
