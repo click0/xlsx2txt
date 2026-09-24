@@ -6,7 +6,6 @@ from datetime import datetime
 
 from openpyxl import load_workbook
 from openpyxl.cell.cell import Cell as OpenpyxlCell
-from openpyxl.utils import get_column_letter
 
 from xlsx2txt.models import (
     Cell,
@@ -54,6 +53,8 @@ def _extract_font_style(cell: OpenpyxlCell) -> FontStyle:
 def _extract_fill_style(cell: OpenpyxlCell) -> FillStyle:
     """Extract fill style from openpyxl cell."""
     fill = cell.fill
+    if not hasattr(fill, "patternType"):  # GradientFill
+        return FillStyle(pattern_type="gradient")
     return FillStyle(
         pattern_type=fill.patternType,
         fg_color=_get_color_value(fill.fgColor) if fill.fgColor else None,
@@ -139,30 +140,14 @@ def read_cell(
 
     cell = sheet[coordinate]
 
-    # Determine data type
-    if cell.value is None:
-        data_type = "n"
-    elif isinstance(cell.value, bool):
-        data_type = "b"
-    elif isinstance(cell.value, (int, float)):
-        data_type = "n"
-    elif isinstance(cell.value, str):
-        data_type = "s"
-    else:
-        data_type = "s"
-
-    # Get formula if exists
-    formula = None
-    if cell.data_type == "f" or (isinstance(cell.value, str) and cell.value.startswith("=")):
-        formula = cell.value
-
     return Cell(
         coordinate=coordinate,
         value=cell.value,
-        data_type=data_type,
-        formula=formula,
+        data_type=_get_cell_type(cell),
+        formula=_get_formula(cell),
         style=_extract_cell_style(cell),
     )
+
 
 
 def read_cell_style(
