@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xlsx2txt"
-version = "0.0.6"
+dynamic = ["version"]
 description = "Bidirectional Excel converter (xlsx ↔ text) for Git version control"
 readme = "README.md"
 license = {text = "BSD-3-Clause"}
@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Office/Business :: Office Suites",
     "Topic :: Software Development :: Version Control :: Git",
 ]
@@ -45,8 +46,12 @@ Homepage = "https://github.com/click0/xlsx2txt"
 Repository = "https://github.com/click0/xlsx2txt"
 Issues = "https://github.com/click0/xlsx2txt/issues"
 
+[tool.setuptools.dynamic]
+version = {attr = "xlsx2txt.__version__"}
+
 [tool.setuptools.packages.find]
 where = ["."]
+include = ["xlsx2txt*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

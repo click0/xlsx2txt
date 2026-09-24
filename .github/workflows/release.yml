@@ -1,0 +1,153 @@
+name: release
+
+# Two ways to release from the GitHub web UI:
+#  1. Actions -> release -> "Run workflow": enter the version (e.g. 0.1.0).
+#     Tests run, the package is built, tag v<version> and a GitHub Release
+#     with the wheel and sdist are created.
+#  2. Releases -> "Draft a new release" with tag v<version> -> Publish.
+#     Tests run, and the built files are attached to that release.
+# The version must match __version__ in xlsx2txt/__init__.py.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, without the leading v (e.g. 0.1.0)"
+        required: true
+        type: string
+      prerelease:
+        description: "Mark as pre-release"
+        type: boolean
+        default: false
+      pypi:
+        description: "Also publish to PyPI (needs trusted publishing set up)"
+        type: boolean
+        default: false
+  release:
+    types: [published]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+
+  build:
+    needs: tests
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Determine and check version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
+            version="${TAG_NAME#v}"
+          else
+            version="${INPUT_VERSION#v}"
+          fi
+          if ! echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([abc]|rc)?[0-9]*$'; then
+            echo "::error::Invalid version '$version' (expected e.g. 1.2.3 or 1.2.3rc1)"
+            exit 1
+          fi
+          code_version=$(python -c "import re; s=open('xlsx2txt/__init__.py').read(); print(re.search(r'__version__\s*=\s*[\"\']([^\"\']+)', s).group(1))")
+          if [ "$version" != "$code_version" ]; then
+            echo "::error::Release version $version does not match __version__ = $code_version in xlsx2txt/__init__.py. Bump it first."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Check tag does not exist yet
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/v${VERSION}" >/dev/null; then
+            echo "::error::Tag v${VERSION} already exists"
+            exit 1
+          fi
+
+      - name: Build
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          twine check dist/*
+
+      - name: Smoke test the wheel
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python -m venv /tmp/venv
+          /tmp/venv/bin/pip install dist/*.whl
+          /tmp/venv/bin/xlsx2txt --version | grep -F "$VERSION"
+          /tmp/venv/bin/xlsx2txt export tests/fixtures/complex.xlsx /tmp/out
+          /tmp/venv/bin/xlsx2txt verify /tmp/out --against tests/fixtures/complex.xlsx
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  github-release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Create release
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          flags=""
+          if [ "$PRERELEASE" = "true" ]; then flags="--prerelease"; fi
+          gh release create "v${VERSION}" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "v${VERSION}" \
+            --generate-notes $flags
+
+      - name: Attach files to release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+
+  pypi:
+    needs: [build, github-release]
+    if: (github.event_name == 'workflow_dispatch' && inputs.pypi) || (github.event_name == 'release' && vars.PUBLISH_TO_PYPI == 'true')
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/xlsx2txt/${{ needs.build.outputs.version }}/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
