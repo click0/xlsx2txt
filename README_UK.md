@@ -130,6 +130,20 @@ report/
 - Форматований (rich) текст у клітинці зберігається як звичайний текст.
 - Формули не перераховуються; Excel перерахує їх при відкритті файлу.
 
+## Випуск релізу
+
+Релізи робляться через веб-інтерфейс GitHub (workflow `.github/workflows/release.yml`):
+
+1. Збільште `__version__` у `xlsx2txt/__init__.py` (версія пакета береться звідти) і злийте в `main`.
+2. Далі або
+   - **Actions → release → Run workflow**, введіть версію (напр. `0.1.0`); workflow прожене тести,
+     збере wheel і sdist, створить тег `v0.1.0` і GitHub Release з файлами; або
+   - **Releases → Draft a new release**, створіть тег `v0.1.0`, натисніть **Publish**; workflow прожене
+     тести й додасть зібрані файли до цього релізу.
+3. Публікація на PyPI (необов'язково): додайте [trusted publisher](https://docs.pypi.org/trusted-publishers/)
+   на PyPI (workflow `release.yml`, environment `pypi`), потім позначте **pypi** при запуску workflow або
+   задайте змінну репозиторію `PUBLISH_TO_PYPI=true` для релізів, створених на сторінці Releases.
+
 ## Порівняння
 
 | Інструмент | Напрямок | Формули | Стилі | Round-trip |
