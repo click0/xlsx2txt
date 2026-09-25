@@ -33,6 +33,7 @@ Unlike simple text extractors, xlsx2txt preserves everything — formulas, style
 | Charts | ✅ (chart XML + anchor) |
 | Chart sheets | ✅ |
 | Pivot tables | ✅ (definition and cache as indented XML in `data/pivots/`) |
+| Printer driver settings | ✅ (`data/printer/`, restored byte for byte) |
 | External links to other workbooks | ✅ |
 
 ## Installation
@@ -120,7 +121,8 @@ report/
 │   │   └── cellStyles.json # Combinations referenced by cells ("s")
 │   ├── theme/theme1.xml    # Workbook theme (theme colors)
 │   ├── media/              # Images, named by content hash
-│   └── pivots/             # Pivot tables and their caches (XML)
+│   ├── pivots/             # Pivot tables and their caches (XML)
+│   └── printer/            # Printer driver settings of sheets (binary)
 ├── vba/                    # VBA project (for .xlsm)
 │   ├── xl/vbaProject.bin
 │   └── modules/*.bas       # VBA source code (read-only, needs oletools)
@@ -165,13 +167,16 @@ git config diff.xlsx.textconv "xlsx2txt cat"
 
 ## Limitations
 
-- Shapes (drawn objects) are not exported yet; `export` prints a warning when
-  a file contains them.
+- Not exported: shapes and SmartArt, threaded comments (kept as plain notes),
+  sparklines, slicers and timelines, form and ActiveX controls, embedded OLE
+  objects, data connections and Power Query, the data model, pictures in
+  cells. `export` and `info` warn about each of them (and about any other
+  part of the file they do not know), so nothing is lost silently.
 - VBA is restored from the binary `vbaProject.bin`. The sources in
   `vba/modules/` are extracted for review and diffs only (install the `vba`
   extra: `pip install xlsx2txt[vba]`); editing them does not change the macros.
-- Printer driver settings (`printerSettings*.bin`) and the calculation chain
-  are not kept; Excel recreates the latter when the file is opened. A hidden
+- The calculation chain is not kept; Excel recreates it when the file is
+  opened. A hidden
   column with width 0 comes back with the default width (it stays hidden).
 - Charts are stored as chart XML as understood by openpyxl; exotic chart
   features that openpyxl does not support may be lost.

@@ -139,6 +139,13 @@ def diff_models(a: dict[str, Any], b: dict[str, Any], ignore_cached: bool = Fals
             state = "added" if name not in media_a else "removed" if name not in media_b else "changed"
             out.append(f"media/{name}: {state}")
 
+    printer_a = a.get("printerSettings") or {}
+    printer_b = b.get("printerSettings") or {}
+    for name in sorted(set(printer_a) | set(printer_b)):
+        if printer_a.get(name) != printer_b.get(name):
+            state = "added" if name not in printer_a else "removed" if name not in printer_b else "changed"
+            out.append(f"printer/{name}: {state}")
+
     pivots_a = a.get("pivots") or {}
     pivots_b = b.get("pivots") or {}
     for name in sorted(set(pivots_a) | set(pivots_b)):
@@ -187,6 +194,9 @@ def validate_model(model: dict[str, Any]) -> list[str]:
     media = model.get("media") or {}
     pivots = model.get("pivots") or {}
     for sheet in model.get("sheets", []):
+        printer_file = sheet.get("printerSettings")
+        if printer_file and printer_file not in (model.get("printerSettings") or {}):
+            errors.append(f"[{sheet.get('name')}] printer settings not found: data/printer/{printer_file}")
         for entry in sheet.get("pivotTables", []):
             names = [entry.get("table")]
             if entry.get("cache"):

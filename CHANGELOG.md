@@ -14,6 +14,14 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
   exported to `data/pivots/` as indented XML and restored on import; caches
   shared by several pivot tables are stored once. `cat` and `info` list them.
 - Example `07-pivot-table`.
+- Printer driver settings of sheets (`printerSettings*.bin`) are exported to
+  `data/printer/` and restored byte for byte.
+- Warnings for everything that is not exported: shapes, SmartArt, threaded
+  comments, sparklines, slicers, timelines, form/ActiveX controls, embedded
+  objects, data connections, Power Query, the data model, pictures in cells,
+  extended conditional formatting/validation and any unknown part of the
+  file. openpyxl's own notes are collected into the same list instead of
+  being printed to the console.
 
 ## [0.3.0] - 2026-09-25
 
