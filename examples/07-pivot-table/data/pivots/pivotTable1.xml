@@ -1,0 +1,34 @@
+<pivotTableDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" name="Totals" cacheId="1" dataOnRows="0" dataCaption="Values" showError="0" showMissing="1" updatedVersion="6" minRefreshableVersion="3" asteriskTotals="0" showItems="1" editData="0" disableFieldList="0" showCalcMbrs="1" visualTotals="1" showMultipleLabel="1" showDataDropDown="1" showDrill="1" printDrill="0" showMemberPropertyTips="1" showDataTips="1" enableWizard="1" enableDrill="1" enableFieldProperties="1" preserveFormatting="1" useAutoFormatting="0" pageWrap="0" pageOverThenDown="0" subtotalHiddenItems="0" rowGrandTotals="1" colGrandTotals="1" fieldPrintTitles="0" itemPrintTitles="0" mergeItem="0" showDropZones="1" createdVersion="6" indent="0" showEmptyRow="0" showEmptyCol="0" showHeaders="1" compact="1" outline="1" outlineData="1" compactData="1" published="0" gridDropZones="0" immersive="1" multipleFieldFilters="0" chartFormat="0" fieldListSortAscending="0" mdxSubqueries="0" applyNumberFormats="0" applyBorderFormats="0" applyFontFormats="0" applyPatternFormats="0" applyAlignmentFormats="0" applyWidthHeightFormats="1" r:id="rId1">
+  <location ref="D1:E4" firstHeaderRow="1" firstDataRow="1" firstDataCol="1" />
+  <pivotFields count="2">
+    <pivotField axis="axisRow" showDropDowns="1" compact="1" outline="1" subtotalTop="1" dragToRow="1" dragToCol="1" dragToPage="1" dragToData="1" dragOff="1" showAll="0" topAutoShow="1" itemPageCount="10" sortType="manual" defaultSubtotal="1">
+      <items count="3">
+        <item t="data" sd="1" x="0" />
+        <item t="data" sd="1" x="1" />
+        <item t="default" sd="1" />
+      </items>
+    </pivotField>
+    <pivotField dataField="1" showDropDowns="1" compact="1" outline="1" subtotalTop="1" dragToRow="1" dragToCol="1" dragToPage="1" dragToData="1" dragOff="1" showAll="0" topAutoShow="1" itemPageCount="10" sortType="manual" defaultSubtotal="1" />
+  </pivotFields>
+  <rowFields count="1">
+    <field x="0" />
+  </rowFields>
+  <rowItems count="3">
+    <i t="data" r="0" i="0">
+      <x v="0" />
+    </i>
+    <i t="data" r="0" i="0">
+      <x v="1" />
+    </i>
+    <i t="grand" r="0" i="0">
+      <x v="0" />
+    </i>
+  </rowItems>
+  <colItems count="1">
+    <i t="data" r="0" i="0" />
+  </colItems>
+  <dataFields count="1">
+    <dataField name="Sum of Amount" fld="1" subtotal="sum" showDataAs="normal" baseField="0" baseItem="0" />
+  </dataFields>
+  <pivotTableStyleInfo name="PivotStyleLight16" showRowHeaders="1" showColHeaders="1" showRowStripes="0" showColStripes="0" showLastColumn="1" />
+</pivotTableDefinition>

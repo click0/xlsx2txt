@@ -201,7 +201,8 @@ def info(input_path):
             f"  - {sheet['name']}{state}: range {sheet.get('usedRange')}, "
             f"{len(cells)} cell(s), {formulas} formula(s), "
             f"{len(sheet.get('mergedCells', []))} merged range(s), "
-            f"{len(sheet.get('images', []))} image(s), {len(sheet.get('charts', []))} chart(s)"
+            f"{len(sheet.get('images', []))} image(s), {len(sheet.get('charts', []))} chart(s), "
+            f"{len(sheet.get('pivotTables', []))} pivot table(s)"
         )
     for chartsheet in workbook.get("chartsheets", []):
         click.echo(f"  - {chartsheet['name']} (chart sheet): {len(chartsheet.get('charts', []))} chart(s)")

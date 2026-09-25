@@ -1,0 +1,19 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "data/pivots/pivotCache1.xml": "a95ffd244c205842db941765bd1c49c47ba48e013f270ed06234eaf6bfadb528",
+    "data/pivots/pivotCache1_records.xml": "2bf7f360067f845d4cd3b274fa70f78ba629d6f58c5ca641a7d5be95fa01549e",
+    "data/pivots/pivotTable1.xml": "8d221cd8f2b233f7bb28c68481faf8e6ac29aba155bf4c0709290bf99ef93456",
+    "data/sheets/Data.json": "839e4dd7a1b20334202bd1cbc500572edb668c661769cbf7b57f698a657feeb1",
+    "data/sheets/_index.json": "d682bcb5d58a0e35f33ee4b104c0908c523be7d813746779b5858986e2a843b5",
+    "data/styles/alignments.json": "501de836b88be0a82b9af264bee8fa768a66abb5ac670b802bf7f696171b0e96",
+    "data/styles/borders.json": "501de836b88be0a82b9af264bee8fa768a66abb5ac670b802bf7f696171b0e96",
+    "data/styles/cellStyles.json": "ef2f88619c45c528b16d48134787456cd96a13d55a41ccc3317c74ef9f3b76c2",
+    "data/styles/fills.json": "75f473456d8c4974a3423cf9b27efa9a66e757b05fd61113de5a6bcfa6056604",
+    "data/styles/fonts.json": "b99a2c50680d9bf1255c9b90173e8578d6e550477f310b8abc138f6f26a6d1bb",
+    "data/styles/protections.json": "1d78a8aa6f2b2591ac74758dce7b3d1147f845d6bd233ac3f95dcd0802d19291",
+    "data/theme/theme1.xml": "d15e8ebf78ef7b9720839d7ae8fdc81a7df5bc24706d8e137df61a5683c358d9",
+    "data/workbook.json": "49dc9fdceeb3e6aaf7fd923fa26d48523127fa10142e27a391051194aaf6418b",
+    "manifest.json": "7158805021bd0a54c1e9c50e9a1522180cb283c455663d9b76e4b2a7eb817889"
+  }
+}

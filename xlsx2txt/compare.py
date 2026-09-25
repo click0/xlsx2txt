@@ -139,6 +139,13 @@ def diff_models(a: Dict[str, Any], b: Dict[str, Any], ignore_cached: bool = Fals
             state = "added" if name not in media_a else "removed" if name not in media_b else "changed"
             out.append(f"media/{name}: {state}")
 
+    pivots_a = a.get("pivots") or {}
+    pivots_b = b.get("pivots") or {}
+    for name in sorted(set(pivots_a) | set(pivots_b)):
+        if pivots_a.get(name) != pivots_b.get(name):
+            state = "added" if name not in pivots_a else "removed" if name not in pivots_b else "changed"
+            out.append(f"pivots/{name}: {state}")
+
     src_a = a.get("vbaSources") or {}
     src_b = b.get("vbaSources") or {}
     for name in sorted(set(src_a) | set(src_b)):
@@ -178,7 +185,15 @@ def validate_model(model: Dict[str, Any]) -> List[str]:
 
     valid_types = {"s", "rs", "n", "b", "e", "d", "td", "f"}
     media = model.get("media") or {}
+    pivots = model.get("pivots") or {}
     for sheet in model.get("sheets", []):
+        for entry in sheet.get("pivotTables", []):
+            names = [entry.get("table")]
+            if entry.get("cache"):
+                names.append(f"{entry['cache']}.xml")
+            for name in names:
+                if name not in pivots:
+                    errors.append(f"[{sheet.get('name')}] pivot file not found: data/pivots/{name}")
         for image in sheet.get("images", []):
             if image.get("file") not in media:
                 errors.append(f"[{sheet.get('name')}] image file not found: data/media/{image.get('file')}")

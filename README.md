@@ -32,6 +32,7 @@ Unlike simple text extractors, xlsx2txt preserves everything — formulas, style
 | Images | ✅ (stored in `data/media/`) |
 | Charts | ✅ (chart XML + anchor) |
 | Chart sheets | ✅ |
+| Pivot tables | ✅ (definition and cache as indented XML in `data/pivots/`) |
 | External links to other workbooks | ✅ |
 
 ## Installation
@@ -117,7 +118,8 @@ report/
 │   │   ├── protections.json
 │   │   └── cellStyles.json # Combinations referenced by cells ("s")
 │   ├── theme/theme1.xml    # Workbook theme (theme colors)
-│   └── media/              # Images, named by content hash
+│   ├── media/              # Images, named by content hash
+│   └── pivots/             # Pivot tables and their caches (XML)
 ├── vba/                    # VBA project (for .xlsm)
 │   ├── xl/vbaProject.bin
 │   └── modules/*.bas       # VBA source code (read-only, needs oletools)
@@ -162,8 +164,8 @@ git config diff.xlsx.textconv "xlsx2txt cat"
 
 ## Limitations
 
-- Pivot tables and shapes are not exported yet; `export` and `info` print a
-  warning when a file contains them.
+- Shapes (drawn objects) are not exported yet; `export` prints a warning when
+  a file contains them.
 - VBA is restored from the binary `vbaProject.bin`. The sources in
   `vba/modules/` are extracted for review and diffs only (install the `vba`
   extra: `pip install xlsx2txt[vba]`); editing them does not change the macros.

@@ -14,6 +14,7 @@ from openpyxl.worksheet.formula import ArrayFormula, DataTableFormula
 from openpyxl.xml.functions import tostring
 
 from xlsx2txt import __version__
+from xlsx2txt.pivots import export_pivots
 from xlsx2txt.drawings import anchor_to_json, chart_to_json, extract_images, media_name
 from xlsx2txt.styles import StyleTable, color_to_json, dxf_to_json, rich_text_to_json
 from xlsx2txt.vba import extract_vba_sources
@@ -320,18 +321,6 @@ def _export_defined_names(names) -> List[Dict[str, Any]]:
     return result
 
 
-# ---------------------------------------------------------------------------
-# Unsupported features
-# ---------------------------------------------------------------------------
-
-def _collect_warnings(wb) -> List[str]:
-    warnings = []
-    for ws in wb.worksheets:
-        if getattr(ws, "_pivots", None):
-            warnings.append(f"Sheet '{ws.title}': {len(ws._pivots)} pivot table(s) are not exported")
-    return warnings
-
-
 def _export_custom_properties(wb) -> List[Dict[str, Any]]:
     """User-defined document properties (File > Info > Properties > Custom)."""
     result = []
@@ -392,7 +381,7 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
     """Load an Excel file and convert it into the xlsx2txt model.
 
     The model is a plain dict with the keys ``manifest``, ``workbook``,
-    ``styles``, ``sheets``, ``theme``, ``vba``, ``vbaSources`` and ``media``.
+    ``styles``, ``sheets``, ``theme``, ``vba``, ``vbaSources``, ``media`` and ``pivots``.
 
     Args:
         path: Path to .xlsx / .xlsm file.
@@ -420,6 +409,7 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
 
     images, warnings = extract_images(path)
     media: Dict[str, bytes] = {}
+    pivots = export_pivots(wb.worksheets)
 
     sheets = []
     for ws in wb.worksheets:
@@ -434,6 +424,8 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
             sheet["images"] = sheet_images
         if ws._charts:
             sheet["charts"] = [chart_to_json(chart) for chart in ws._charts]
+        if ws.title in pivots["sheets"]:
+            sheet["pivotTables"] = pivots["sheets"][ws.title]
         # Keep cells last: they are the largest part of the file.
         sheet["cells"] = sheet.pop("cells")
         sheets.append(sheet)
@@ -476,7 +468,7 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
         "sheetCount": len(sheets),
         "cellCount": sum(len(s["cells"]) for s in sheets),
         "hasVba": bool(vba),
-        "warnings": warnings + _collect_warnings(wb),
+        "warnings": warnings,
     }
 
     return {
@@ -488,4 +480,5 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
         "vba": vba,
         "vbaSources": vba_sources,
         "media": media,
+        "pivots": pivots["files"],
     }

@@ -9,6 +9,7 @@ Layout::
     data/styles/{fonts,fills,borders,alignments,protections,cellStyles}.json
     data/theme/theme1.xml          (optional)
     data/media/image_<hash>.<ext>  (optional, images)
+    data/pivots/*.xml              (optional, pivot tables and their caches)
     vba/xl/vbaProject.bin          (optional, .xlsm only)
     vba/modules/*.bas|cls|frm      (optional, VBA source code, read-only)
     _verify/checksums.json
@@ -31,6 +32,7 @@ SHEETS_INDEX = "data/sheets/_index.json"
 STYLES_DIR = "data/styles"
 THEME = "data/theme/theme1.xml"
 MEDIA_DIR = "data/media"
+PIVOTS_DIR = "data/pivots"
 VBA_DIR = "vba"
 VBA_SOURCES_DIR = "vba/modules"
 CHECKSUMS = "_verify/checksums.json"
@@ -156,6 +158,9 @@ def write_model(model: Dict[str, Any], out_dir: Union[str, Path], force: bool = 
     for name, content in sorted((model.get("media") or {}).items()):
         files[f"{MEDIA_DIR}/{name}"] = content
 
+    for name, xml in sorted((model.get("pivots") or {}).items()):
+        files[f"{PIVOTS_DIR}/{name}"] = xml.encode("utf-8")
+
     for name, content in sorted((model.get("vba") or {}).items()):
         files[f"{VBA_DIR}/{name}"] = content
 
@@ -233,6 +238,13 @@ def read_model(in_dir: Union[str, Path]) -> Dict[str, Any]:
             else:
                 vba[path.relative_to(vba_dir).as_posix()] = path.read_bytes()
 
+    pivots = {}
+    pivots_dir = in_dir / PIVOTS_DIR
+    if pivots_dir.is_dir():
+        for path in sorted(pivots_dir.iterdir()):
+            if path.is_file():
+                pivots[path.name] = path.read_bytes().decode("utf-8")
+
     media = {}
     media_dir = in_dir / MEDIA_DIR
     if media_dir.is_dir():
@@ -249,6 +261,7 @@ def read_model(in_dir: Union[str, Path]) -> Dict[str, Any]:
         "vba": vba,
         "vbaSources": vba_sources,
         "media": media,
+        "pivots": pivots,
     }
 
 

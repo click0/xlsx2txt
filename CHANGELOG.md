@@ -6,6 +6,12 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 
 ## [Unreleased]
 
+### Added
+- Pivot tables: the table definition, its cache and cached records are
+  exported to `data/pivots/` as indented XML and restored on import; caches
+  shared by several pivot tables are stored once. `cat` and `info` list them.
+- Example `07-pivot-table`.
+
 ## [0.3.0] - 2026-09-25
 
 ### Added

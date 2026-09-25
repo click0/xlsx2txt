@@ -1,0 +1,18 @@
+<pivotCacheRecords xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="4">
+  <r>
+    <x v="0" />
+    <n v="1" />
+  </r>
+  <r>
+    <x v="1" />
+    <n v="2" />
+  </r>
+  <r>
+    <x v="0" />
+    <n v="3" />
+  </r>
+  <r>
+    <x v="1" />
+    <n v="4" />
+  </r>
+</pivotCacheRecords>
