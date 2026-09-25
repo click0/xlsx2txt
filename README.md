@@ -31,11 +31,22 @@ Unlike simple text extractors, xlsx2txt preserves everything — formulas, style
 | Rich text (formatted runs inside a cell) | ✅ |
 | Images | ✅ (stored in `data/media/`) |
 | Charts | ✅ (chart XML + anchor) |
+| Chart sheets | ✅ |
+| External links to other workbooks | ✅ |
 
 ## Installation
 
+The package is not published on PyPI yet. Install it from GitHub:
+
 ```bash
-pip install xlsx2txt
+# latest release (replace the version with the one you need)
+pip install https://github.com/click0/xlsx2txt/releases/download/v0.3.0/xlsx2txt-0.3.0-py3-none-any.whl
+
+# or the current main branch
+pip install git+https://github.com/click0/xlsx2txt.git
+
+# with VBA source extraction
+pip install "xlsx2txt[vba] @ git+https://github.com/click0/xlsx2txt.git"
 ```
 
 ## Quick Start
@@ -71,6 +82,7 @@ xlsx2txt info report.xlsx
 | `verify DIR` | Checks checksums, internal consistency and that the data survives an import → export round-trip (`--no-roundtrip` to skip). `--against FILE` also compares with an Excel file. Exit code 1 on problems. |
 | `diff A B` | Semantic diff of two exports or Excel files (styles are compared by content, not by index). `--ignore-cached` ignores cached formula results. Exit code 1 when different. |
 | `info PATH` | Sheets, cell/formula counts, VBA presence and unsupported features. |
+| `cat PATH` | Print an Excel file or export as plain text, one line per cell (`--no-styles`, `--no-cached-values`). Used for `git diff`, see below. |
 
 The same operations are available from Python:
 
@@ -125,13 +137,34 @@ Cell keys: `v` value, `t` type (`s` string, `n` number, `b` boolean,
 style), `link` hyperlink, `comment` comment. For formula cells `v` is the last
 value calculated by Excel; it is informational and ignored on import.
 
+## Git integration
+
+Let `git diff` show what changed inside `.xlsx` files, without exporting them:
+
+```bash
+echo '*.xlsx diff=xlsx' >> .gitattributes
+echo '*.xlsm diff=xlsx' >> .gitattributes
+git config diff.xlsx.textconv "xlsx2txt cat"
+```
+
+```diff
+-B3: 100
++B3: 150
+-A4: 'Gadget'
++A4: 'Gadget'  [font bold color FFFF0000]
++A7: 'New row'
+```
+
 ## Limitations
 
-- Pivot tables, chartsheets, shapes and external links are not exported yet;
-  `export` and `info` print a warning when a file contains them.
+- Pivot tables and shapes are not exported yet; `export` and `info` print a
+  warning when a file contains them.
 - VBA is restored from the binary `vbaProject.bin`. The sources in
   `vba/modules/` are extracted for review and diffs only (install the `vba`
   extra: `pip install xlsx2txt[vba]`); editing them does not change the macros.
+- Printer driver settings (`printerSettings*.bin`) and the calculation chain
+  are not kept; Excel recreates the latter when the file is opened. A hidden
+  column with width 0 comes back with the default width (it stays hidden).
 - Charts are stored as chart XML as understood by openpyxl; exotic chart
   features that openpyxl does not support may be lost.
 - Formula results are not recalculated; Excel recalculates them when the

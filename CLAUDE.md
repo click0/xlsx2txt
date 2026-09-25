@@ -12,7 +12,8 @@ Git-friendly JSON directory layout, with full round-trip.
 - `xlsx2txt/storage.py` — model ↔ directory (`manifest.json`, `data/`, `vba/`, `_verify/`)
 - `xlsx2txt/styles.py`, `drawings.py`, `vba.py` — styles, images/charts, VBA sources
 - `xlsx2txt/compare.py` — semantic diff and validation
-- `xlsx2txt/cli.py` — `export`, `import`, `verify`, `diff`, `info`
+- `xlsx2txt/text.py` — plain-text rendering for `cat` / git textconv
+- `xlsx2txt/cli.py` — `export`, `import`, `verify`, `diff`, `info`, `cat`
 
 ## Checks
 

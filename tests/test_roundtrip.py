@@ -136,3 +136,56 @@ def test_load_model_accepts_file_and_dir(tmp_path):
     out_dir = tmp_path / "simple"
     export_xlsx(FIXTURES_DIR / "simple.xlsx", out_dir)
     assert diff_models(load_model(FIXTURES_DIR / "simple.xlsx"), load_model(out_dir)) == []
+
+
+def test_custom_properties_roundtrip(tmp_path):
+    import datetime as dt
+    from openpyxl.packaging.custom import BoolProperty, DateTimeProperty, IntProperty, StringProperty
+
+    source = tmp_path / "props.xlsx"
+    wb = Workbook()
+    for prop in (StringProperty(name="Project", value="Q1"), IntProperty(name="Build", value=7),
+                 BoolProperty(name="Final", value=True),
+                 DateTimeProperty(name="Due", value=dt.datetime(2026, 1, 2, 3, 4, 5))):
+        wb.custom_doc_props.append(prop)
+    wb.save(source)
+
+    model = export_model(source)
+    assert model["workbook"]["customProperties"][:2] == [
+        {"name": "Project", "type": "StringProperty", "value": "Q1"},
+        {"name": "Build", "type": "IntProperty", "value": 7},
+    ]
+    _, again = _reexport(model, tmp_path)
+    assert again["workbook"]["customProperties"] == model["workbook"]["customProperties"]
+
+
+def test_hidden_zero_width_column_roundtrip(tmp_path):
+    import zipfile
+
+    source = tmp_path / "cols.xlsx"
+    wb = Workbook()
+    wb.active["A1"] = 1
+    wb.active.column_dimensions["B"].hidden = True
+    wb.save(source)
+    # Excel writes width="0" for such columns; openpyxl cannot, so patch the XML.
+    patched = tmp_path / "patched.xlsx"
+    with zipfile.ZipFile(source) as zin, zipfile.ZipFile(patched, "w") as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "xl/worksheets/sheet1.xml":
+                data = data.replace(b'<col hidden="1" width="13"', b'<col hidden="1" width="0"')
+            zout.writestr(item, data)
+
+    model = export_model(patched)
+    assert model["sheets"][0]["dimensions"]["columns"]["B"] == {"width": 0.0, "hidden": True}
+    assert roundtrip_diff(model) == []
+
+
+def test_theme_line_endings_preserved(tmp_path):
+    out_dir = tmp_path / "out"
+    model = export_xlsx(FIXTURES_DIR / "simple.xlsx", out_dir)
+    model["theme"] = model["theme"].replace("\n", "\r\n")
+    from xlsx2txt.storage import read_model, write_model
+
+    write_model(model, out_dir)
+    assert read_model(out_dir)["theme"] == model["theme"]

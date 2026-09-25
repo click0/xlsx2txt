@@ -2,6 +2,7 @@
 
 import datetime
 import zipfile
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -156,7 +157,7 @@ def _export_dimensions(ws, styles: StyleTable) -> Dict[str, Any]:
     columns = {}
     for letter, dim in sorted(ws.column_dimensions.items(), key=lambda kv: kv[1].min or 0):
         data: Dict[str, Any] = {}
-        if dim.customWidth and dim.width is not None:
+        if dim.width is not None:  # 0 is a real width (hidden columns)
             data["width"] = dim.width
         if dim.hidden:
             data["hidden"] = True
@@ -328,11 +329,45 @@ def _collect_warnings(wb) -> List[str]:
     for ws in wb.worksheets:
         if getattr(ws, "_pivots", None):
             warnings.append(f"Sheet '{ws.title}': {len(ws._pivots)} pivot table(s) are not exported")
-    for cs in wb.chartsheets:
-        warnings.append(f"Chartsheet '{cs.title}' is not exported")
-    if getattr(wb, "_external_links", None):
-        warnings.append(f"{len(wb._external_links)} external link(s) are not exported")
     return warnings
+
+
+def _export_custom_properties(wb) -> List[Dict[str, Any]]:
+    """User-defined document properties (File > Info > Properties > Custom)."""
+    result = []
+    for prop in wb.custom_doc_props.props:
+        value = prop.value
+        if isinstance(value, datetime.datetime):
+            value = value.isoformat()
+        result.append({"name": prop.name, "type": type(prop).__name__, "value": value})
+    return result
+
+
+def _export_chartsheets(wb) -> List[Dict[str, Any]]:
+    result = []
+    for position, sheet in enumerate(wb._sheets):
+        if sheet not in wb.chartsheets:
+            continue
+        data: Dict[str, Any] = {"name": sheet.title, "position": position}
+        if sheet.sheet_state != "visible":
+            data["state"] = sheet.sheet_state
+        data["charts"] = [chart_to_json(chart) for chart in sheet._charts]
+        result.append(data)
+    return result
+
+
+def _export_external_links(wb) -> List[Dict[str, Any]]:
+    """Links to other workbooks, in order: formulas refer to them as [1], [2]..."""
+    result = []
+    for link in getattr(wb, "_external_links", []):
+        rel = link.file_link
+        data: Dict[str, Any] = {"target": rel.Target}
+        if rel.TargetMode:
+            data["targetMode"] = rel.TargetMode
+        data["type"] = rel.Type
+        data["xml"] = tostring(link.to_tree()).decode("utf-8")
+        result.append(data)
+    return result
 
 
 def _extract_vba(path: Path) -> Dict[str, bytes]:
@@ -368,9 +403,14 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path}")
 
-    is_macro = path.suffix.lower() in (".xlsm", ".xltm")
-    wb = load_workbook(path, data_only=False, keep_links=True, rich_text=True)
-    wb_values = load_workbook(path, data_only=True) if cached_values else None
+    with zipfile.ZipFile(path) as archive:
+        # Detect macros by content: git textconv passes temporary file names.
+        is_macro = "xl/vbaProject.bin" in archive.namelist()
+    # Pass the content, not the path: openpyxl rejects names without an Excel
+    # extension, and git textconv may hand over temporary files.
+    content = path.read_bytes()
+    wb = load_workbook(BytesIO(content), data_only=False, keep_links=True, rich_text=True)
+    wb_values = load_workbook(BytesIO(content), data_only=True) if cached_values else None
 
     styles = StyleTable()
     # Index 0 is the default style of the workbook.
@@ -405,6 +445,15 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
         "properties": pick_attrs(wb.properties, PROPERTY_ATTRS),
         "definedNames": _export_defined_names(wb.defined_names.values()),
     }
+    custom = _export_custom_properties(wb)
+    if custom:
+        workbook["customProperties"] = custom
+    chartsheets = _export_chartsheets(wb)
+    if chartsheets:
+        workbook["chartsheets"] = chartsheets
+    external_links = _export_external_links(wb)
+    if external_links:
+        workbook["externalLinks"] = external_links
     calc = pick_attrs(wb.calculation, CALC_ATTRS)
     if calc:
         workbook["calculation"] = calc

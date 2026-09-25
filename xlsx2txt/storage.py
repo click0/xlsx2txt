@@ -217,7 +217,8 @@ def read_model(in_dir: Union[str, Path]) -> Dict[str, Any]:
         styles[part] = _load_json(in_dir / STYLES_DIR / f"{part}.json")
 
     theme_path = in_dir / THEME
-    theme = theme_path.read_text(encoding="utf-8") if theme_path.exists() else None
+    # Bytes, not read_text(): keep the original line endings of the theme XML.
+    theme = theme_path.read_bytes().decode("utf-8") if theme_path.exists() else None
 
     vba = {}
     vba_sources = {}
@@ -228,7 +229,7 @@ def read_model(in_dir: Union[str, Path]) -> Dict[str, Any]:
                 continue
             rel = path.relative_to(in_dir).as_posix()
             if rel.startswith(VBA_SOURCES_DIR + "/"):
-                vba_sources[rel[len(VBA_SOURCES_DIR) + 1:]] = path.read_text(encoding="utf-8")
+                vba_sources[rel[len(VBA_SOURCES_DIR) + 1:]] = path.read_bytes().decode("utf-8")
             else:
                 vba[path.relative_to(vba_dir).as_posix()] = path.read_bytes()
 
