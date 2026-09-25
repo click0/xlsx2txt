@@ -4,7 +4,7 @@ import datetime
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from openpyxl import load_workbook
 from openpyxl.cell.cell import Cell as OpenpyxlCell, MergedCell
@@ -62,7 +62,7 @@ PROPERTY_ATTRS = [
 CALC_ATTRS = ["calcMode", "fullCalcOnLoad", "iterate", "iterateCount", "iterateDelta", "refMode"]
 
 
-def pick_attrs(obj: Any, names: List[str], skip_defaults: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def pick_attrs(obj: Any, names: list[str], skip_defaults: dict[str, Any] | None = None) -> dict[str, Any]:
     """Collect JSON-friendly attribute values of an object, skipping None."""
     result = {}
     if obj is None:
@@ -85,7 +85,7 @@ def pick_attrs(obj: Any, names: List[str], skip_defaults: Optional[Dict[str, Any
 # Cell values
 # ---------------------------------------------------------------------------
 
-def encode_value(value: Any) -> Dict[str, Any]:
+def encode_value(value: Any) -> dict[str, Any]:
     """Encode a plain (non-formula) cell value as {"v": ..., "t": ...}."""
     if isinstance(value, CellRichText):
         return {"v": rich_text_to_json(value), "t": "rs"}
@@ -104,8 +104,8 @@ def encode_value(value: Any) -> Dict[str, Any]:
     return {"v": str(value), "t": "s"}
 
 
-def _encode_cell(cell: OpenpyxlCell, cached: Any, styles: StyleTable) -> Optional[Dict[str, Any]]:
-    record: Dict[str, Any] = {}
+def _encode_cell(cell: OpenpyxlCell, cached: Any, styles: StyleTable) -> dict[str, Any] | None:
+    record: dict[str, Any] = {}
     value = cell.value
 
     if isinstance(cell, MergedCell):
@@ -154,10 +154,10 @@ def _encode_cell(cell: OpenpyxlCell, cached: Any, styles: StyleTable) -> Optiona
 # Sheets
 # ---------------------------------------------------------------------------
 
-def _export_dimensions(ws, styles: StyleTable) -> Dict[str, Any]:
+def _export_dimensions(ws, styles: StyleTable) -> dict[str, Any]:
     columns = {}
     for letter, dim in sorted(ws.column_dimensions.items(), key=lambda kv: kv[1].min or 0):
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         if dim.width is not None:  # 0 is a real width (hidden columns)
             data["width"] = dim.width
         if dim.hidden:
@@ -200,7 +200,7 @@ def _export_dimensions(ws, styles: StyleTable) -> Dict[str, Any]:
     return {"columns": columns, "rows": rows}
 
 
-def _export_conditional_formatting(ws) -> List[Dict[str, Any]]:
+def _export_conditional_formatting(ws) -> list[dict[str, Any]]:
     result = []
     for cf in ws.conditional_formatting:
         rules = []
@@ -220,7 +220,7 @@ def _export_conditional_formatting(ws) -> List[Dict[str, Any]]:
     return result
 
 
-def _export_data_validations(ws) -> List[Dict[str, Any]]:
+def _export_data_validations(ws) -> list[dict[str, Any]]:
     result = []
     for dv in ws.data_validations.dataValidation:
         data = {"sqref": str(dv.sqref)}
@@ -229,8 +229,8 @@ def _export_data_validations(ws) -> List[Dict[str, Any]]:
     return result
 
 
-def _export_sheet(ws, ws_values, styles: StyleTable) -> Dict[str, Any]:
-    sheet: Dict[str, Any] = {"name": ws.title}
+def _export_sheet(ws, ws_values, styles: StyleTable) -> dict[str, Any]:
+    sheet: dict[str, Any] = {"name": ws.title}
     if ws.sheet_state != "visible":
         sheet["state"] = ws.sheet_state
 
@@ -255,7 +255,7 @@ def _export_sheet(ws, ws_values, styles: StyleTable) -> Dict[str, Any]:
     if ws.auto_filter.ref:
         sheet["autoFilter"] = ws.auto_filter.ref
 
-    printing: Dict[str, Any] = {}
+    printing: dict[str, Any] = {}
     if ws.print_area:
         printing["area"] = ws.print_area
     if ws.print_title_rows:
@@ -310,7 +310,7 @@ def _export_sheet(ws, ws_values, styles: StyleTable) -> Dict[str, Any]:
     return sheet
 
 
-def _export_defined_names(names) -> List[Dict[str, Any]]:
+def _export_defined_names(names) -> list[dict[str, Any]]:
     result = []
     for dn in names:
         data = {"name": dn.name, "value": dn.attr_text}
@@ -321,7 +321,7 @@ def _export_defined_names(names) -> List[Dict[str, Any]]:
     return result
 
 
-def _export_custom_properties(wb) -> List[Dict[str, Any]]:
+def _export_custom_properties(wb) -> list[dict[str, Any]]:
     """User-defined document properties (File > Info > Properties > Custom)."""
     result = []
     for prop in wb.custom_doc_props.props:
@@ -332,12 +332,12 @@ def _export_custom_properties(wb) -> List[Dict[str, Any]]:
     return result
 
 
-def _export_chartsheets(wb) -> List[Dict[str, Any]]:
+def _export_chartsheets(wb) -> list[dict[str, Any]]:
     result = []
     for position, sheet in enumerate(wb._sheets):
         if sheet not in wb.chartsheets:
             continue
-        data: Dict[str, Any] = {"name": sheet.title, "position": position}
+        data: dict[str, Any] = {"name": sheet.title, "position": position}
         if sheet.sheet_state != "visible":
             data["state"] = sheet.sheet_state
         data["charts"] = [chart_to_json(chart) for chart in sheet._charts]
@@ -345,12 +345,12 @@ def _export_chartsheets(wb) -> List[Dict[str, Any]]:
     return result
 
 
-def _export_external_links(wb) -> List[Dict[str, Any]]:
+def _export_external_links(wb) -> list[dict[str, Any]]:
     """Links to other workbooks, in order: formulas refer to them as [1], [2]..."""
     result = []
     for link in getattr(wb, "_external_links", []):
         rel = link.file_link
-        data: Dict[str, Any] = {"target": rel.Target}
+        data: dict[str, Any] = {"target": rel.Target}
         if rel.TargetMode:
             data["targetMode"] = rel.TargetMode
         data["type"] = rel.Type
@@ -359,7 +359,7 @@ def _export_external_links(wb) -> List[Dict[str, Any]]:
     return result
 
 
-def _extract_vba(path: Path) -> Dict[str, bytes]:
+def _extract_vba(path: Path) -> dict[str, bytes]:
     """Read VBA related parts (xl/vbaProject.bin etc.) directly from the archive."""
     parts = {}
     with zipfile.ZipFile(path) as archive:
@@ -377,7 +377,7 @@ def _extract_vba(path: Path) -> Dict[str, bytes]:
 # Public API
 # ---------------------------------------------------------------------------
 
-def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str, Any]:
+def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]:
     """Load an Excel file and convert it into the xlsx2txt model.
 
     The model is a plain dict with the keys ``manifest``, ``workbook``,
@@ -408,7 +408,7 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
         styles.add(default_cell)
 
     images, warnings = extract_images(path)
-    media: Dict[str, bytes] = {}
+    media: dict[str, bytes] = {}
     pivots = export_pivots(wb.worksheets)
 
     sheets = []
@@ -430,7 +430,7 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
         sheet["cells"] = sheet.pop("cells")
         sheets.append(sheet)
 
-    workbook: Dict[str, Any] = {
+    workbook: dict[str, Any] = {
         "epoch": 1904 if wb.epoch.year == 1904 else 1900,
         "sheets": [ws.title for ws in wb.worksheets],
         "activeSheet": wb.worksheets.index(wb.active) if wb.active in wb.worksheets else 0,
@@ -455,7 +455,7 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
         theme = theme.decode("utf-8")
 
     vba = _extract_vba(path) if is_macro else {}
-    vba_sources: Dict[str, str] = {}
+    vba_sources: dict[str, str] = {}
     if vba:
         vba_sources, vba_warnings = extract_vba_sources(path)
         warnings.extend(vba_warnings)

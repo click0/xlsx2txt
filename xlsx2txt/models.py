@@ -1,7 +1,7 @@
 """Data models for xlsx2txt."""
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -11,40 +11,40 @@ class FontStyle:
     size: float = 11.0
     bold: bool = False
     italic: bool = False
-    underline: Optional[str] = None
+    underline: str | None = None
     strike: bool = False
-    color: Optional[str] = None
+    color: str | None = None
 
 
 @dataclass
 class FillStyle:
     """Cell fill/background properties."""
-    pattern_type: Optional[str] = None
-    fg_color: Optional[str] = None
-    bg_color: Optional[str] = None
+    pattern_type: str | None = None
+    fg_color: str | None = None
+    bg_color: str | None = None
 
 
 @dataclass
 class BorderSide:
     """Single border side properties."""
-    style: Optional[str] = None
-    color: Optional[str] = None
+    style: str | None = None
+    color: str | None = None
 
 
 @dataclass
 class BorderStyle:
     """Cell border properties."""
-    left: Optional[BorderSide] = None
-    right: Optional[BorderSide] = None
-    top: Optional[BorderSide] = None
-    bottom: Optional[BorderSide] = None
+    left: BorderSide | None = None
+    right: BorderSide | None = None
+    top: BorderSide | None = None
+    bottom: BorderSide | None = None
 
 
 @dataclass
 class AlignmentStyle:
     """Cell alignment properties."""
-    horizontal: Optional[str] = None
-    vertical: Optional[str] = None
+    horizontal: str | None = None
+    vertical: str | None = None
     wrap_text: bool = False
     text_rotation: int = 0
 
@@ -65,7 +65,7 @@ class Cell:
     coordinate: str
     value: Any = None
     data_type: str = "n"
-    formula: Optional[str] = None
+    formula: str | None = None
     style: CellStyle = field(default_factory=CellStyle)
 
 
@@ -74,7 +74,7 @@ class ColumnDimension:
     """Column dimension properties."""
     width: float = 8.43
     hidden: bool = False
-    style: Optional[int] = None
+    style: int | None = None
 
 
 @dataclass
@@ -82,15 +82,15 @@ class RowDimension:
     """Row dimension properties."""
     height: float = 15.0
     hidden: bool = False
-    style: Optional[int] = None
+    style: int | None = None
 
 
 @dataclass
 class SheetDimensions:
     """Sheet dimensions."""
-    used_range: Optional[str] = None
-    columns: Dict[str, ColumnDimension] = field(default_factory=dict)
-    rows: Dict[str, RowDimension] = field(default_factory=dict)
+    used_range: str | None = None
+    columns: dict[str, ColumnDimension] = field(default_factory=dict)
+    rows: dict[str, RowDimension] = field(default_factory=dict)
     default_row_height: float = 15.0
     default_col_width: float = 8.43
 
@@ -100,10 +100,10 @@ class CellData:
     """Compact cell data for JSON export."""
     v: Any = None  # value
     t: str = "n"   # type: s=string, n=number, b=boolean, d=date, e=error
-    s: Optional[int] = None  # style index
-    f: Optional[str] = None  # formula
-    f_type: Optional[str] = None  # formula type: array, shared
-    f_ref: Optional[str] = None  # formula reference range
+    s: int | None = None  # style index
+    f: str | None = None  # formula
+    f_type: str | None = None  # formula type: array, shared
+    f_ref: str | None = None  # formula reference range
 
 
 @dataclass
@@ -112,8 +112,8 @@ class Sheet:
     sheet_id: int
     name: str
     dimensions: SheetDimensions = field(default_factory=SheetDimensions)
-    merged_cells: List[str] = field(default_factory=list)
-    cells: Dict[str, CellData] = field(default_factory=dict)
+    merged_cells: list[str] = field(default_factory=list)
+    cells: dict[str, CellData] = field(default_factory=dict)
     
     def to_dict(self) -> dict:
         """Convert to JSON-serializable dictionary."""

@@ -1,6 +1,6 @@
 """Semantic comparison of two xlsx2txt models."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # Properties rewritten by Excel/openpyxl on every save.
 VOLATILE_PROPERTIES = {"modified"}
@@ -14,7 +14,7 @@ _PART_KEYS = {
 }
 
 
-def resolve_style(styles: Dict[str, Any], index: Optional[int]) -> Dict[str, Any]:
+def resolve_style(styles: dict[str, Any], index: int | None) -> dict[str, Any]:
     """Expand a cell style index into a full style description."""
     cell_styles = styles.get("cellStyles") or []
     if not cell_styles:
@@ -30,7 +30,7 @@ def _fmt(value: Any) -> str:
     return text if len(text) <= 60 else text[:57] + "..."
 
 
-def _diff_values(path: str, a: Any, b: Any, out: List[str]) -> None:
+def _diff_values(path: str, a: Any, b: Any, out: list[str]) -> None:
     if a == b:
         return
     if isinstance(a, dict) and isinstance(b, dict):
@@ -45,7 +45,7 @@ def _diff_values(path: str, a: Any, b: Any, out: List[str]) -> None:
     out.append(f"{path}: {_fmt(a)} -> {_fmt(b)}")
 
 
-def _cell_view(record: Optional[Dict[str, Any]], styles: Dict[str, Any], ignore_cached: bool) -> Dict[str, Any]:
+def _cell_view(record: dict[str, Any] | None, styles: dict[str, Any], ignore_cached: bool) -> dict[str, Any]:
     record = dict(record or {})
     index = record.pop("s", 0)
     if ignore_cached and record.get("t") == "f":
@@ -55,7 +55,7 @@ def _cell_view(record: Optional[Dict[str, Any]], styles: Dict[str, Any], ignore_
     return record
 
 
-def _dims_view(dims: Dict[str, Any], styles: Dict[str, Any]) -> Dict[str, Any]:
+def _dims_view(dims: dict[str, Any], styles: dict[str, Any]) -> dict[str, Any]:
     result = {}
     for kind in ("columns", "rows"):
         entries = {}
@@ -72,9 +72,9 @@ def _dims_view(dims: Dict[str, Any], styles: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
-def _diff_sheet(name: str, a: Dict[str, Any], b: Dict[str, Any],
-                styles_a: Dict[str, Any], styles_b: Dict[str, Any],
-                ignore_cached: bool, out: List[str]) -> None:
+def _diff_sheet(name: str, a: dict[str, Any], b: dict[str, Any],
+                styles_a: dict[str, Any], styles_b: dict[str, Any],
+                ignore_cached: bool, out: list[str]) -> None:
     prefix = f"[{name}]"
     skip = {"cells", "dimensions", "name"}
     for key in list(a) + [k for k in b if k not in a]:
@@ -106,9 +106,9 @@ def _diff_sheet(name: str, a: Dict[str, Any], b: Dict[str, Any],
             _diff_values(f"{prefix} {coord}", view_a, view_b, out)
 
 
-def diff_models(a: Dict[str, Any], b: Dict[str, Any], ignore_cached: bool = False) -> List[str]:
+def diff_models(a: dict[str, Any], b: dict[str, Any], ignore_cached: bool = False) -> list[str]:
     """Return a human readable list of differences between two models."""
-    out: List[str] = []
+    out: list[str] = []
 
     wb_a = dict(a["workbook"])
     wb_b = dict(b["workbook"])
@@ -163,7 +163,7 @@ def diff_models(a: Dict[str, Any], b: Dict[str, Any], ignore_cached: bool = Fals
     return out
 
 
-def validate_model(model: Dict[str, Any]) -> List[str]:
+def validate_model(model: dict[str, Any]) -> list[str]:
     """Check internal consistency of a model (style references, names...)."""
     errors = []
     styles = model.get("styles", {})
@@ -177,7 +177,7 @@ def validate_model(model: Dict[str, Any]) -> List[str]:
     names = [s.get("name") for s in model.get("sheets", [])]
     chartsheet_names = [c.get("name") for c in model.get("workbook", {}).get("chartsheets", [])]
     all_names = names + chartsheet_names
-    if len(set(n.lower() for n in all_names if n)) != len(all_names):
+    if len({n.lower() for n in all_names if n}) != len(all_names):
         errors.append("duplicate or empty sheet names")
     listed = model.get("workbook", {}).get("sheets")
     if listed is not None and listed != names:

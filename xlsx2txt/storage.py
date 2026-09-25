@@ -19,7 +19,7 @@ import hashlib
 import json
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any
 
 from xlsx2txt.exporter import FORMAT_NAME, FORMAT_VERSION
 from xlsx2txt.names import safe_file_name
@@ -90,7 +90,7 @@ def dumps(obj: Any) -> str:
 # File names
 # ---------------------------------------------------------------------------
 
-def sheet_file_names(names: List[str]) -> List[str]:
+def sheet_file_names(names: list[str]) -> list[str]:
     """Build unique, filesystem-safe file names for sheets."""
     used = {"_index"}
     result = []
@@ -129,10 +129,10 @@ def _prepare_dir(out_dir: Path, force: bool) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
 
-def write_model(model: Dict[str, Any], out_dir: Union[str, Path], force: bool = False) -> List[str]:
+def write_model(model: dict[str, Any], out_dir: str | Path, force: bool = False) -> list[str]:
     """Write a model to a directory. Returns the list of written files."""
     out_dir = Path(out_dir)
-    files: Dict[str, bytes] = {}
+    files: dict[str, bytes] = {}
 
     def put_json(rel: str, obj: Any) -> None:
         files[rel] = dumps(obj).encode("utf-8")
@@ -192,7 +192,7 @@ def _load_json(path: Path) -> Any:
         raise FormatError(f"Invalid JSON in {path}: {exc}")
 
 
-def read_model(in_dir: Union[str, Path]) -> Dict[str, Any]:
+def read_model(in_dir: str | Path) -> dict[str, Any]:
     """Read a directory written by :func:`write_model`."""
     in_dir = Path(in_dir)
     if not (in_dir / MANIFEST).exists():
@@ -265,15 +265,15 @@ def read_model(in_dir: Union[str, Path]) -> Dict[str, Any]:
     }
 
 
-def check_checksums(in_dir: Union[str, Path]) -> Dict[str, List[str]]:
+def check_checksums(in_dir: str | Path) -> dict[str, list[str]]:
     """Compare files against ``_verify/checksums.json``.
 
     Returns a dict with ``modified``, ``missing`` and ``extra`` file lists.
     """
     in_dir = Path(in_dir)
     data = _load_json(in_dir / CHECKSUMS)
-    expected: Dict[str, str] = data.get("files", {})
-    result: Dict[str, List[str]] = {"modified": [], "missing": [], "extra": []}
+    expected: dict[str, str] = data.get("files", {})
+    result: dict[str, list[str]] = {"modified": [], "missing": [], "extra": []}
 
     for rel, digest in sorted(expected.items()):
         path = in_dir / rel

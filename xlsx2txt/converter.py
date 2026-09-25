@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from xlsx2txt.compare import diff_models, validate_model
 from xlsx2txt.exporter import export_model
@@ -11,11 +11,11 @@ from xlsx2txt.storage import check_checksums, read_model, write_model
 
 EXCEL_SUFFIXES = {".xlsx", ".xlsm", ".xltx", ".xltm"}
 
-PathLike = Union[str, Path]
+PathLike = str | Path
 
 
 def export_xlsx(input_file: PathLike, output_dir: PathLike, force: bool = False,
-                cached_values: bool = True) -> Dict[str, Any]:
+                cached_values: bool = True) -> dict[str, Any]:
     """Export an Excel file to an xlsx2txt directory. Returns the model."""
     model = export_model(input_file, cached_values=cached_values)
     write_model(model, output_dir, force=force)
@@ -31,7 +31,7 @@ def import_dir(input_dir: PathLike, output_file: PathLike) -> Path:
     return import_model(model, output_file)
 
 
-def load_model(path: PathLike, cached_values: bool = True) -> Dict[str, Any]:
+def load_model(path: PathLike, cached_values: bool = True) -> dict[str, Any]:
     """Load a model from an Excel file or an xlsx2txt directory."""
     path = Path(path)
     if path.is_dir():
@@ -39,7 +39,7 @@ def load_model(path: PathLike, cached_values: bool = True) -> Dict[str, Any]:
     return export_model(path, cached_values=cached_values)
 
 
-def roundtrip_diff(model: Dict[str, Any]) -> List[str]:
+def roundtrip_diff(model: dict[str, Any]) -> list[str]:
     """Import a model into a temporary workbook, re-export it and compare."""
     suffix = ".xlsm" if model.get("vba") else ".xlsx"
     with tempfile.TemporaryDirectory() as tmp:
@@ -49,8 +49,8 @@ def roundtrip_diff(model: Dict[str, Any]) -> List[str]:
     return diff_models(model, again, ignore_cached=True)
 
 
-def verify_dir(input_dir: PathLike, against: Optional[PathLike] = None,
-               roundtrip: bool = True) -> Dict[str, Any]:
+def verify_dir(input_dir: PathLike, against: PathLike | None = None,
+               roundtrip: bool = True) -> dict[str, Any]:
     """Verify an xlsx2txt directory.
 
     Checks file checksums, internal consistency, optionally that the data
@@ -58,7 +58,7 @@ def verify_dir(input_dir: PathLike, against: Optional[PathLike] = None,
     """
     input_dir = Path(input_dir)
     model = read_model(input_dir)
-    report: Dict[str, Any] = {
+    report: dict[str, Any] = {
         "checksums": check_checksums(input_dir),
         "errors": [],
         "roundtrip": [],

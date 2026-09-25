@@ -1,7 +1,7 @@
 """Excel file reader for xlsx2txt."""
 
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 from datetime import datetime
 
 from openpyxl import load_workbook
@@ -23,7 +23,7 @@ from xlsx2txt.models import (
 )
 
 
-def _get_color_value(color) -> Optional[str]:
+def _get_color_value(color) -> str | None:
     """Extract color value from openpyxl color object."""
     if color is None:
         return None
@@ -62,7 +62,7 @@ def _extract_fill_style(cell: OpenpyxlCell) -> FillStyle:
     )
 
 
-def _extract_border_side(side) -> Optional[BorderSide]:
+def _extract_border_side(side) -> BorderSide | None:
     """Extract single border side."""
     if side is None or side.style is None:
         return None
@@ -106,9 +106,9 @@ def _extract_cell_style(cell: OpenpyxlCell) -> CellStyle:
 
 
 def read_cell(
-    path: Union[str, Path],
+    path: str | Path,
     coordinate: str = "A1",
-    sheet_name: Optional[str] = None,
+    sheet_name: str | None = None,
 ) -> Cell:
     """
     Read a cell from an Excel file.
@@ -151,9 +151,9 @@ def read_cell(
 
 
 def read_cell_style(
-    path: Union[str, Path],
+    path: str | Path,
     coordinate: str = "A1",
-    sheet_name: Optional[str] = None,
+    sheet_name: str | None = None,
 ) -> CellStyle:
     """
     Read only the style of a cell from an Excel file.
@@ -196,7 +196,7 @@ def _get_cell_value(cell: OpenpyxlCell) -> Any:
     return cell.value
 
 
-def _get_formula(cell: OpenpyxlCell) -> Optional[str]:
+def _get_formula(cell: OpenpyxlCell) -> str | None:
     """Extract formula from cell if present."""
     if cell.data_type == "f":
         return cell.value if isinstance(cell.value, str) else None
@@ -206,8 +206,8 @@ def _get_formula(cell: OpenpyxlCell) -> Optional[str]:
 
 
 def read_sheet(
-    path: Union[str, Path],
-    sheet_name: Optional[str] = None,
+    path: str | Path,
+    sheet_name: str | None = None,
 ) -> Sheet:
     """
     Read entire sheet from an Excel file.

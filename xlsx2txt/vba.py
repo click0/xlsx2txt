@@ -1,12 +1,11 @@
 """Extraction of VBA source code for review (requires the optional oletools)."""
 
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
 
 from xlsx2txt.names import safe_file_name
 
 
-def extract_vba_sources(path: Union[str, Path]) -> Tuple[Dict[str, str], List[str]]:
+def extract_vba_sources(path: str | Path) -> tuple[dict[str, str], list[str]]:
     """Return ``({module file name: source code}, warnings)``.
 
     The sources are informational: importing always restores the original
@@ -17,7 +16,7 @@ def extract_vba_sources(path: Union[str, Path]) -> Tuple[Dict[str, str], List[st
     except ImportError:
         return {}, ["VBA source code is not exported: install oletools (pip install xlsx2txt[vba])"]
 
-    sources: Dict[str, str] = {}
+    sources: dict[str, str] = {}
     parser = VBA_Parser(str(path))
     try:
         if not parser.detect_vba_macros():

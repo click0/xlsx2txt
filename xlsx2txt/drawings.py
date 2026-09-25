@@ -4,7 +4,7 @@ import hashlib
 import posixpath
 import zipfile
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from openpyxl.chart.chartspace import ChartSpace
 from openpyxl.chart.reader import read_chart
@@ -28,21 +28,21 @@ from openpyxl.xml.functions import fromstring, tostring
 # ---------------------------------------------------------------------------
 
 
-def _marker_to_json(marker: AnchorMarker) -> Dict[str, Any]:
-    result: Dict[str, Any] = {"cell": f"{get_column_letter(marker.col + 1)}{marker.row + 1}"}
+def _marker_to_json(marker: AnchorMarker) -> dict[str, Any]:
+    result: dict[str, Any] = {"cell": f"{get_column_letter(marker.col + 1)}{marker.row + 1}"}
     if marker.colOff or marker.rowOff:
         result["offset"] = [marker.colOff, marker.rowOff]
     return result
 
 
-def _marker_from_json(data: Dict[str, Any]) -> AnchorMarker:
+def _marker_from_json(data: dict[str, Any]) -> AnchorMarker:
     letter, row = coordinate_from_string(data["cell"])
     col_off, row_off = data.get("offset", [0, 0])
     return AnchorMarker(col=column_index_from_string(letter) - 1, row=row - 1,
                         colOff=col_off, rowOff=row_off)
 
 
-def anchor_to_json(anchor: Any) -> Dict[str, Any]:
+def anchor_to_json(anchor: Any) -> dict[str, Any]:
     """Describe where a drawing object sits; sizes are in EMU."""
     if isinstance(anchor, str):
         return {"type": "oneCell", "from": {"cell": anchor}}
@@ -65,7 +65,7 @@ def anchor_to_json(anchor: Any) -> Dict[str, Any]:
     raise ValueError(f"Unsupported anchor: {type(anchor).__name__}")
 
 
-def anchor_from_json(data: Dict[str, Any]) -> Any:
+def anchor_from_json(data: dict[str, Any]) -> Any:
     kind = data.get("type")
     if kind == "twoCell":
         return TwoCellAnchor(_from=_marker_from_json(data["from"]), to=_marker_from_json(data["to"]),
@@ -90,15 +90,15 @@ def media_name(content: bytes, extension: str) -> str:
     return f"image_{hashlib.sha256(content).hexdigest()[:16]}.{extension.lower()}"
 
 
-def extract_images(path) -> Tuple[Dict[str, List[Tuple[bytes, str, Any]]], List[str]]:
+def extract_images(path) -> tuple[dict[str, list[tuple[bytes, str, Any]]], list[str]]:
     """Read images straight from the archive.
 
     Returns ``({sheet name: [(content, extension, anchor), ...]}, warnings)``.
     openpyxl only keeps images when Pillow is installed and loses the
     original bytes, so the archive is parsed directly.
     """
-    result: Dict[str, List[Tuple[bytes, str, Any]]] = {}
-    warnings: List[str] = []
+    result: dict[str, list[tuple[bytes, str, Any]]] = {}
+    warnings: list[str] = []
     with zipfile.ZipFile(path) as archive:
         names = set(archive.namelist())
         parser = WorkbookParser(archive, "xl/workbook.xml")
@@ -135,7 +135,7 @@ def extract_images(path) -> Tuple[Dict[str, List[Tuple[bytes, str, Any]]], List[
     return result, warnings
 
 
-def build_image(content: bytes, anchor: Dict[str, Any]):
+def build_image(content: bytes, anchor: dict[str, Any]):
     """Create an openpyxl image (requires Pillow)."""
     try:
         from openpyxl.drawing.image import Image
@@ -154,20 +154,20 @@ def build_image(content: bytes, anchor: Dict[str, Any]):
 # Charts
 # ---------------------------------------------------------------------------
 
-def chart_to_json(chart) -> Dict[str, Any]:
+def chart_to_json(chart) -> dict[str, Any]:
     return {
         "anchor": anchor_to_json(chart.anchor),
         "xml": tostring(chart._write()).decode("utf-8"),
     }
 
 
-def chart_from_json(data: Dict[str, Any]):
+def chart_from_json(data: dict[str, Any]):
     chart = read_chart(ChartSpace.from_tree(fromstring(data["xml"])))
     chart.anchor = anchor_from_json(data["anchor"])
     return chart
 
 
-def chart_title(data: Dict[str, Any]) -> Optional[str]:
+def chart_title(data: dict[str, Any]) -> str | None:
     """Best-effort chart title for summaries."""
     try:
         tree = fromstring(data["xml"])
