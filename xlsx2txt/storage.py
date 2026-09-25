@@ -10,6 +10,7 @@ Layout::
     data/theme/theme1.xml          (optional)
     data/media/image_<hash>.<ext>  (optional, images)
     data/pivots/*.xml              (optional, pivot tables and their caches)
+    data/printer/printer_<hash>.bin (optional, printer driver settings)
     vba/xl/vbaProject.bin          (optional, .xlsm only)
     vba/modules/*.bas|cls|frm      (optional, VBA source code, read-only)
     _verify/checksums.json
@@ -33,6 +34,7 @@ STYLES_DIR = "data/styles"
 THEME = "data/theme/theme1.xml"
 MEDIA_DIR = "data/media"
 PIVOTS_DIR = "data/pivots"
+PRINTER_DIR = "data/printer"
 VBA_DIR = "vba"
 VBA_SOURCES_DIR = "vba/modules"
 CHECKSUMS = "_verify/checksums.json"
@@ -158,6 +160,9 @@ def write_model(model: dict[str, Any], out_dir: str | Path, force: bool = False)
     for name, content in sorted((model.get("media") or {}).items()):
         files[f"{MEDIA_DIR}/{name}"] = content
 
+    for name, content in sorted((model.get("printerSettings") or {}).items()):
+        files[f"{PRINTER_DIR}/{name}"] = content
+
     for name, xml in sorted((model.get("pivots") or {}).items()):
         files[f"{PIVOTS_DIR}/{name}"] = xml.encode("utf-8")
 
@@ -238,6 +243,13 @@ def read_model(in_dir: str | Path) -> dict[str, Any]:
             else:
                 vba[path.relative_to(vba_dir).as_posix()] = path.read_bytes()
 
+    printer = {}
+    printer_dir = in_dir / PRINTER_DIR
+    if printer_dir.is_dir():
+        for path in sorted(printer_dir.iterdir()):
+            if path.is_file():
+                printer[path.name] = path.read_bytes()
+
     pivots = {}
     pivots_dir = in_dir / PIVOTS_DIR
     if pivots_dir.is_dir():
@@ -262,6 +274,7 @@ def read_model(in_dir: str | Path) -> dict[str, Any]:
         "vbaSources": vba_sources,
         "media": media,
         "pivots": pivots,
+        "printerSettings": printer,
     }
 
 

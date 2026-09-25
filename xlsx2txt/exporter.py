@@ -1,6 +1,7 @@
 """Export an Excel workbook into the xlsx2txt model (a JSON-friendly dict)."""
 
 import datetime
+import warnings as _warnings
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -14,6 +15,7 @@ from openpyxl.worksheet.formula import ArrayFormula, DataTableFormula
 from openpyxl.xml.functions import tostring
 
 from xlsx2txt import __version__
+from xlsx2txt.package import extract_printer_settings, printer_settings_name, unsupported_warnings
 from xlsx2txt.pivots import export_pivots
 from xlsx2txt.drawings import anchor_to_json, chart_to_json, extract_images, media_name
 from xlsx2txt.styles import StyleTable, color_to_json, dxf_to_json, rich_text_to_json
@@ -398,8 +400,15 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
     # Pass the content, not the path: openpyxl rejects names without an Excel
     # extension, and git textconv may hand over temporary files.
     content = path.read_bytes()
-    wb = load_workbook(BytesIO(content), data_only=False, keep_links=True, rich_text=True)
-    wb_values = load_workbook(BytesIO(content), data_only=True) if cached_values else None
+    # openpyxl reports what it drops as UserWarnings on stderr; collect them
+    # into the manifest instead, next to xlsx2txt's own warnings.
+    with _warnings.catch_warnings(record=True) as caught:
+        _warnings.simplefilter("always")
+        wb = load_workbook(BytesIO(content), data_only=False, keep_links=True, rich_text=True)
+    with _warnings.catch_warnings():
+        _warnings.simplefilter("ignore")
+        wb_values = load_workbook(BytesIO(content), data_only=True) if cached_values else None
+    openpyxl_warnings = list(dict.fromkeys(f"openpyxl: {w.message}" for w in caught))
 
     styles = StyleTable()
     # Index 0 is the default style of the workbook.
@@ -408,6 +417,10 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
         styles.add(default_cell)
 
     images, warnings = extract_images(path)
+    warnings.extend(unsupported_warnings(path, keep_vba=is_macro))
+    warnings.extend(openpyxl_warnings)
+    printer = extract_printer_settings(path)
+    printer_files: dict[str, bytes] = {}
     media: dict[str, bytes] = {}
     pivots = export_pivots(wb.worksheets)
 
@@ -427,6 +440,10 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
         if ws.title in pivots["sheets"]:
             sheet["pivotTables"] = pivots["sheets"][ws.title]
         # Keep cells last: they are the largest part of the file.
+        if ws.title in printer:
+            name = printer_settings_name(printer[ws.title])
+            printer_files[name] = printer[ws.title]
+            sheet["printerSettings"] = name
         sheet["cells"] = sheet.pop("cells")
         sheets.append(sheet)
 
@@ -481,4 +498,5 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
         "vbaSources": vba_sources,
         "media": media,
         "pivots": pivots["files"],
+        "printerSettings": printer_files,
     }

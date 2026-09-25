@@ -24,6 +24,7 @@ from openpyxl.worksheet.table import Table
 from openpyxl.xml.functions import fromstring
 
 from xlsx2txt.drawings import build_image, chart_from_json
+from xlsx2txt.package import inject_printer_settings
 from xlsx2txt.pivots import PivotBuilder
 from xlsx2txt.styles import (
     StyleApplier,
@@ -330,4 +331,12 @@ def import_model(model: dict[str, Any], output: str | Path) -> Path:
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     build_workbook(model).save(output)
+    # openpyxl does not write printer settings; add them to the saved package.
+    files = model.get("printerSettings") or {}
+    settings = {
+        sheet["name"]: files[sheet["printerSettings"]]
+        for sheet in model["sheets"]
+        if sheet.get("printerSettings") in files
+    }
+    inject_printer_settings(output, settings)
     return output

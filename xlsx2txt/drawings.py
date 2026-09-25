@@ -115,7 +115,10 @@ def extract_images(path) -> tuple[dict[str, list[tuple[bytes, str, Any]]], list[
                 try:
                     drawing = SpreadsheetDrawing.from_tree(fromstring(archive.read(drawing_path)))
                 except TypeError:
-                    warnings.append(f"Sheet '{sheet.name}': shapes in {drawing_path} are not exported")
+                    warnings.append(
+                        f"Sheet '{sheet.name}': {drawing_path} could not be read, "
+                        "its images and charts are not exported"
+                    )
                     continue
                 drawing_rels_path = get_rels_path(drawing_path)
                 if drawing_rels_path not in names:
