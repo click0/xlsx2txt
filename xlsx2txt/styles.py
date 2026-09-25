@@ -329,3 +329,48 @@ class StyleApplier:
         obj.protection = protection
         obj.number_format = num_fmt
         self._arrays[index] = copy(obj._style)
+
+
+# ---------------------------------------------------------------------------
+# Rich text (several differently formatted runs inside one cell)
+# ---------------------------------------------------------------------------
+
+_INLINE_FONT_ATTRS = [
+    "rFont", "sz", "b", "i", "u", "strike", "vertAlign", "color",
+    "family", "charset", "scheme", "outline", "shadow", "condense", "extend",
+]
+
+
+def rich_text_to_json(value) -> List[Any]:
+    """Plain runs become strings, formatted runs {"text": ..., "font": {...}}."""
+    runs: List[Any] = []
+    for run in value:
+        if isinstance(run, str):
+            runs.append(run)
+            continue
+        font = {}
+        for attr in _INLINE_FONT_ATTRS:
+            attr_value = getattr(run.font, attr, None)
+            if attr == "color":
+                attr_value = color_to_json(attr_value)
+            if attr_value is None or attr_value is False:
+                continue
+            font[attr] = attr_value
+        runs.append({"text": run.text, "font": font})
+    return runs
+
+
+def rich_text_from_json(runs: List[Any]):
+    from openpyxl.cell.rich_text import CellRichText, TextBlock
+    from openpyxl.cell.text import InlineFont
+
+    parts = []
+    for run in runs:
+        if isinstance(run, str):
+            parts.append(run)
+            continue
+        kwargs = dict(run.get("font", {}))
+        if "color" in kwargs:
+            kwargs["color"] = color_from_json(kwargs["color"])
+        parts.append(TextBlock(InlineFont(**kwargs), run["text"]))
+    return CellRichText(parts)

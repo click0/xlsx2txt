@@ -128,6 +128,20 @@ def diff_models(a: Dict[str, Any], b: Dict[str, Any], ignore_cached: bool = Fals
     if (a.get("theme") or None) != (b.get("theme") or None):
         out.append("theme: changed")
 
+    media_a = a.get("media") or {}
+    media_b = b.get("media") or {}
+    for name in sorted(set(media_a) | set(media_b)):
+        if media_a.get(name) != media_b.get(name):
+            state = "added" if name not in media_a else "removed" if name not in media_b else "changed"
+            out.append(f"media/{name}: {state}")
+
+    src_a = a.get("vbaSources") or {}
+    src_b = b.get("vbaSources") or {}
+    for name in sorted(set(src_a) | set(src_b)):
+        if src_a.get(name) != src_b.get(name):
+            state = "added" if name not in src_a else "removed" if name not in src_b else "changed"
+            out.append(f"vba/modules/{name}: {state}")
+
     vba_a = a.get("vba") or {}
     vba_b = b.get("vba") or {}
     for name in sorted(set(vba_a) | set(vba_b)):
@@ -156,8 +170,12 @@ def validate_model(model: Dict[str, Any]) -> List[str]:
     if listed is not None and listed != names:
         errors.append("workbook.sheets does not match the sheet index")
 
-    valid_types = {"s", "n", "b", "e", "d", "td", "f"}
+    valid_types = {"s", "rs", "n", "b", "e", "d", "td", "f"}
+    media = model.get("media") or {}
     for sheet in model.get("sheets", []):
+        for image in sheet.get("images", []):
+            if image.get("file") not in media:
+                errors.append(f"[{sheet.get('name')}] image file not found: data/media/{image.get('file')}")
         for coord, record in sheet.get("cells", {}).items():
             where = f"[{sheet.get('name')}] {coord}"
             index = record.get("s", 0)

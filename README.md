@@ -27,9 +27,10 @@ Unlike simple text extractors, xlsx2txt preserves everything — formulas, style
 | Tables (ListObjects) | ✅ |
 | Conditional formatting | ✅ |
 | Data validation | ✅ |
-| VBA macros (.xlsm) | ✅ (binary `vbaProject.bin` preserved) |
-| Images | 🚧 (reported as a warning) |
-| Charts | 🚧 (reported as a warning) |
+| VBA macros (.xlsm) | ✅ (binary `vbaProject.bin` preserved, source code in `vba/modules/` for review) |
+| Rich text (formatted runs inside a cell) | ✅ |
+| Images | ✅ (stored in `data/media/`) |
+| Charts | ✅ (chart XML + anchor) |
 
 ## Installation
 
@@ -98,9 +99,11 @@ report/
 │   │   ├── alignments.json
 │   │   ├── protections.json
 │   │   └── cellStyles.json # Combinations referenced by cells ("s")
-│   └── theme/theme1.xml    # Workbook theme (theme colors)
+│   ├── theme/theme1.xml    # Workbook theme (theme colors)
+│   └── media/              # Images, named by content hash
 ├── vba/                    # VBA project (for .xlsm)
-│   └── xl/vbaProject.bin
+│   ├── xl/vbaProject.bin
+│   └── modules/*.bas       # VBA source code (read-only, needs oletools)
 └── _verify/                # Verification data
     └── checksums.json
 ```
@@ -117,17 +120,20 @@ Every cell is written on its own line, so Git diffs stay readable:
 ```
 
 Cell keys: `v` value, `t` type (`s` string, `n` number, `b` boolean,
-`d` date/time in ISO 8601, `td` duration in seconds, `e` error, `f` formula),
+`rs` rich text, `d` date/time in ISO 8601, `td` duration in seconds, `e` error, `f` formula),
 `f` formula, `s` style index in `cellStyles.json` (omitted for the default
 style), `link` hyperlink, `comment` comment. For formula cells `v` is the last
 value calculated by Excel; it is informational and ignored on import.
 
 ## Limitations
 
-- Images, charts, pivot tables, chartsheets and external links are not exported
-  yet; `export` and `info` print a warning when a file contains them.
-- VBA code is kept as the binary `vbaProject.bin`, not as `.bas` sources.
-- Rich text inside a cell is stored as plain text.
+- Pivot tables, chartsheets, shapes and external links are not exported yet;
+  `export` and `info` print a warning when a file contains them.
+- VBA is restored from the binary `vbaProject.bin`. The sources in
+  `vba/modules/` are extracted for review and diffs only (install the `vba`
+  extra: `pip install xlsx2txt[vba]`); editing them does not change the macros.
+- Charts are stored as chart XML as understood by openpyxl; exotic chart
+  features that openpyxl does not support may be lost.
 - Formula results are not recalculated; Excel recalculates them when the
   restored file is opened.
 

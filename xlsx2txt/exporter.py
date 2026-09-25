@@ -7,12 +7,15 @@ from typing import Any, Dict, List, Optional, Union
 
 from openpyxl import load_workbook
 from openpyxl.cell.cell import Cell as OpenpyxlCell, MergedCell
+from openpyxl.cell.rich_text import CellRichText
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.formula import ArrayFormula, DataTableFormula
 from openpyxl.xml.functions import tostring
 
 from xlsx2txt import __version__
-from xlsx2txt.styles import StyleTable, color_to_json, dxf_to_json
+from xlsx2txt.drawings import anchor_to_json, chart_to_json, extract_images, media_name
+from xlsx2txt.styles import StyleTable, color_to_json, dxf_to_json, rich_text_to_json
+from xlsx2txt.vba import extract_vba_sources
 
 FORMAT_NAME = "xlsx2txt"
 FORMAT_VERSION = 1
@@ -82,6 +85,8 @@ def pick_attrs(obj: Any, names: List[str], skip_defaults: Optional[Dict[str, Any
 
 def encode_value(value: Any) -> Dict[str, Any]:
     """Encode a plain (non-formula) cell value as {"v": ..., "t": ...}."""
+    if isinstance(value, CellRichText):
+        return {"v": rich_text_to_json(value), "t": "rs"}
     if isinstance(value, bool):
         return {"v": value, "t": "b"}
     if isinstance(value, (int, float)):
@@ -321,10 +326,6 @@ def _export_defined_names(names) -> List[Dict[str, Any]]:
 def _collect_warnings(wb) -> List[str]:
     warnings = []
     for ws in wb.worksheets:
-        if getattr(ws, "_images", None):
-            warnings.append(f"Sheet '{ws.title}': {len(ws._images)} image(s) are not exported")
-        if getattr(ws, "_charts", None):
-            warnings.append(f"Sheet '{ws.title}': {len(ws._charts)} chart(s) are not exported")
         if getattr(ws, "_pivots", None):
             warnings.append(f"Sheet '{ws.title}': {len(ws._pivots)} pivot table(s) are not exported")
     for cs in wb.chartsheets:
@@ -356,7 +357,7 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
     """Load an Excel file and convert it into the xlsx2txt model.
 
     The model is a plain dict with the keys ``manifest``, ``workbook``,
-    ``styles``, ``sheets``, ``theme`` and ``vba``.
+    ``styles``, ``sheets``, ``theme``, ``vba``, ``vbaSources`` and ``media``.
 
     Args:
         path: Path to .xlsx / .xlsm file.
@@ -368,7 +369,7 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
         raise FileNotFoundError(f"File not found: {path}")
 
     is_macro = path.suffix.lower() in (".xlsm", ".xltm")
-    wb = load_workbook(path, data_only=False, keep_links=True)
+    wb = load_workbook(path, data_only=False, keep_links=True, rich_text=True)
     wb_values = load_workbook(path, data_only=True) if cached_values else None
 
     styles = StyleTable()
@@ -377,10 +378,25 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
     if default_cell is not None:
         styles.add(default_cell)
 
+    images, warnings = extract_images(path)
+    media: Dict[str, bytes] = {}
+
     sheets = []
     for ws in wb.worksheets:
         ws_values = wb_values[ws.title] if wb_values is not None else None
-        sheets.append(_export_sheet(ws, ws_values, styles))
+        sheet = _export_sheet(ws, ws_values, styles)
+        sheet_images = []
+        for content, extension, anchor in images.get(ws.title, []):
+            name = media_name(content, extension)
+            media[name] = content
+            sheet_images.append({"file": name, "anchor": anchor_to_json(anchor)})
+        if sheet_images:
+            sheet["images"] = sheet_images
+        if ws._charts:
+            sheet["charts"] = [chart_to_json(chart) for chart in ws._charts]
+        # Keep cells last: they are the largest part of the file.
+        sheet["cells"] = sheet.pop("cells")
+        sheets.append(sheet)
 
     workbook: Dict[str, Any] = {
         "epoch": 1904 if wb.epoch.year == 1904 else 1900,
@@ -398,6 +414,10 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
         theme = theme.decode("utf-8")
 
     vba = _extract_vba(path) if is_macro else {}
+    vba_sources: Dict[str, str] = {}
+    if vba:
+        vba_sources, vba_warnings = extract_vba_sources(path)
+        warnings.extend(vba_warnings)
 
     manifest = {
         "format": FORMAT_NAME,
@@ -407,7 +427,7 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
         "sheetCount": len(sheets),
         "cellCount": sum(len(s["cells"]) for s in sheets),
         "hasVba": bool(vba),
-        "warnings": _collect_warnings(wb),
+        "warnings": warnings + _collect_warnings(wb),
     }
 
     return {
@@ -417,4 +437,6 @@ def export_model(path: Union[str, Path], cached_values: bool = True) -> Dict[str
         "sheets": sheets,
         "theme": theme,
         "vba": vba,
+        "vbaSources": vba_sources,
+        "media": media,
     }
