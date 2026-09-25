@@ -165,7 +165,7 @@ BSD 3-Clause License
 
 ## Copyright
 
-Copyright (c) 2025, Vladyslav V. Prodan
+Copyright (c) 2025-2026, Vladyslav V. Prodan
 
 ## Acknowledgments
 
