@@ -37,7 +37,7 @@ Unlike simple text extractors, xlsx2txt preserves everything — formulas, style
 
 ## Installation
 
-Requires Python 3.13 or newer. The package is not published on PyPI yet.
+Requires Python 3.11 or newer. The package is not published on PyPI yet.
 Install it from GitHub:
 
 ```bash

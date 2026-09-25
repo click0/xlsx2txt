@@ -7,7 +7,7 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 ## [Unreleased]
 
 ### Changed
-- Python 3.13 or newer is required (was 3.9); tests run on 3.13 and 3.14.
+- Python 3.11 or newer is required (was 3.9); tests run on 3.11–3.14.
 
 ### Added
 - Pivot tables: the table definition, its cache and cached records are

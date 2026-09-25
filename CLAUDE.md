@@ -28,9 +28,10 @@ changing the export format or the examples, run `python examples/generate.py`
 and commit the result — `tests/test_examples.py` fails otherwise. Never commit
 users' own Excel files.
 
-Python 3.13 or newer is required (`requires-python = ">=3.13"`); CI
-(`.github/workflows/tests.yml`) runs the tests on Python 3.13 and 3.14. Modern
-syntax is fine (`list[str]`, `X | None`, `match`).
+Python 3.11 or newer is required (`requires-python = ">=3.11"`); CI
+(`.github/workflows/tests.yml`) runs the tests on Python 3.11–3.14. Use syntax
+available in 3.11 (`list[str]`, `X | None` are fine; no `type X = ...`
+statements or other 3.12+ features).
 
 ## Workflow
 

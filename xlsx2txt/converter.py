@@ -11,7 +11,7 @@ from xlsx2txt.storage import check_checksums, read_model, write_model
 
 EXCEL_SUFFIXES = {".xlsx", ".xlsm", ".xltx", ".xltm"}
 
-type PathLike = str | Path
+PathLike = str | Path
 
 
 def export_xlsx(input_file: PathLike, output_dir: PathLike, force: bool = False,
