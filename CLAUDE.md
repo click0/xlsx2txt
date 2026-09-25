@@ -36,6 +36,11 @@ code compatible with Python 3.9.
 - **Merge your own PRs into `main` automatically** as soon as CI is green on
   the latest commit and there is no merge conflict — do not wait for
   confirmation. If CI fails, fix it first and merge only after it is green.
+- Record every user-visible change under `## [Unreleased]` in both
+  `CHANGELOG.md` and `CHANGELOG_UK.md`. Before a release, bump `__version__`
+  and rename that section to `## [X.Y.Z] - date` in both files: the release
+  description is built from it (`scripts/release_notes.py`) and the release
+  workflow fails without it.
 - The package version lives only in `xlsx2txt/__init__.py` (`__version__`).
 - Releases are made from the GitHub web UI (`.github/workflows/release.yml`);
   the release tag must match `__version__`.
