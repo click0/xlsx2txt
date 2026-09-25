@@ -12,6 +12,7 @@ what the text format looks like without running anything.
 | `04-images-charts` | Image, bar and line charts on a sheet, chart sheet with a pie chart |
 | `05-rich-text` | Cells with several differently formatted runs of text |
 | `06-workbook-features` | Link to another workbook, custom document properties, sheet protection, print settings, tab color |
+| `07-pivot-table` | Pivot table with its cache (`data/pivots/`) |
 
 Try it:
 

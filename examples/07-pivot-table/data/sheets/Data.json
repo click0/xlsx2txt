@@ -1,0 +1,31 @@
+{
+  "name": "Data",
+  "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
+  "usedRange": "A1:E5",
+  "dimensions": {"columns": {}, "rows": {}},
+  "mergedCells": [],
+  "print": {
+    "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
+  },
+  "pivotTables": [{"table": "pivotTable1.xml", "cache": "pivotCache1"}],
+  "cells": {
+    "A1": {"v": "Category", "t": "s"},
+    "B1": {"v": "Amount", "t": "s"},
+    "D1": {"v": "Row Labels", "t": "s"},
+    "E1": {"v": "Sum of Amount", "t": "s"},
+    "A2": {"v": "Fruit", "t": "s"},
+    "B2": {"v": 1, "t": "n"},
+    "D2": {"v": "Fruit", "t": "s"},
+    "E2": {"v": 4, "t": "n"},
+    "A3": {"v": "Veg", "t": "s"},
+    "B3": {"v": 2, "t": "n"},
+    "D3": {"v": "Veg", "t": "s"},
+    "E3": {"v": 6, "t": "n"},
+    "A4": {"v": "Fruit", "t": "s"},
+    "B4": {"v": 3, "t": "n"},
+    "D4": {"v": "Grand Total", "t": "s"},
+    "E4": {"v": 10, "t": "n"},
+    "A5": {"v": "Veg", "t": "s"},
+    "B5": {"v": 4, "t": "n"}
+  }
+}

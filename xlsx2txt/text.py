@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 
 from xlsx2txt.compare import resolve_style
 from xlsx2txt.drawings import chart_title
+from xlsx2txt.pivots import describe as describe_pivot
 
 
 def _color(value: Any) -> str:
@@ -108,6 +109,9 @@ def render_text(model: Dict[str, Any], styles: bool = True) -> str:
             where = chart["anchor"].get("from", {}).get("cell", chart["anchor"].get("type"))
             title = chart_title(chart)
             lines.append(f"chart at {where}" + (f": {title}" if title else ""))
+        for entry in sheet.get("pivotTables", []):
+            description = describe_pivot((model.get("pivots") or {}).get(entry["table"], ""))
+            lines.append(f"pivot table {description or entry['table']}")
         for coord, record in sheet.get("cells", {}).items():
             value = _value(record)
             line = f"{coord}: {value}" if value else f"{coord}:"

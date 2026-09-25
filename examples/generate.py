@@ -24,6 +24,9 @@ from openpyxl.drawing.image import Image
 from openpyxl.formatting.rule import CellIsRule, ColorScaleRule, DataBarRule
 from openpyxl.packaging.custom import BoolProperty, StringProperty
 from openpyxl.packaging.relationship import Relationship
+from openpyxl.pivot.cache import CacheDefinition
+from openpyxl.pivot.record import RecordList
+from openpyxl.pivot.table import TableDefinition
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.workbook.external_link.external import (
@@ -38,6 +41,7 @@ from openpyxl.workbook.external_link.external import (
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.formula import ArrayFormula
 from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.xml.functions import fromstring
 
 EXAMPLES_DIR = Path(__file__).resolve().parent
 FIXED_DATE = datetime.datetime(2026, 1, 1, 12, 0, 0)
@@ -282,6 +286,75 @@ def workbook_features() -> Workbook:
     return wb
 
 
+# openpyxl cannot create pivot tables, so this one is described in XML the way
+# Excel stores it: cache definition, cached records and the table itself.
+PIVOT_MAIN = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+PIVOT_REL = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'
+
+PIVOT_DATA = [("Category", "Amount"), ("Fruit", 1), ("Veg", 2), ("Fruit", 3), ("Veg", 4)]
+
+PIVOT_CACHE = f"""<pivotCacheDefinition {PIVOT_MAIN} {PIVOT_REL} refreshOnLoad="1" recordCount="4">
+  <cacheSource type="worksheet"><worksheetSource ref="A1:B5" sheet="Data"/></cacheSource>
+  <cacheFields count="2">
+    <cacheField name="Category" numFmtId="0">
+      <sharedItems count="2"><s v="Fruit"/><s v="Veg"/></sharedItems>
+    </cacheField>
+    <cacheField name="Amount" numFmtId="0">
+      <sharedItems containsSemiMixedTypes="0" containsString="0" containsNumber="1"
+                   containsInteger="1" minValue="1" maxValue="4"/>
+    </cacheField>
+  </cacheFields>
+</pivotCacheDefinition>"""
+
+PIVOT_RECORDS = f"""<pivotCacheRecords {PIVOT_MAIN} count="4">
+  <r><x v="0"/><n v="1"/></r>
+  <r><x v="1"/><n v="2"/></r>
+  <r><x v="0"/><n v="3"/></r>
+  <r><x v="1"/><n v="4"/></r>
+</pivotCacheRecords>"""
+
+PIVOT_TABLE = f"""<pivotTableDefinition {PIVOT_MAIN} name="Totals" cacheId="1" dataCaption="Values"
+    applyNumberFormats="0" applyBorderFormats="0" applyFontFormats="0"
+    applyPatternFormats="0" applyAlignmentFormats="0" applyWidthHeightFormats="1"
+    updatedVersion="6" minRefreshableVersion="3" createdVersion="6" indent="0"
+    outline="1" outlineData="1">
+  <location ref="D1:E4" firstHeaderRow="1" firstDataRow="1" firstDataCol="1"/>
+  <pivotFields count="2">
+    <pivotField axis="axisRow" showAll="0">
+      <items count="3"><item x="0"/><item x="1"/><item t="default"/></items>
+    </pivotField>
+    <pivotField dataField="1" showAll="0"/>
+  </pivotFields>
+  <rowFields count="1"><field x="0"/></rowFields>
+  <rowItems count="3"><i><x/></i><i><x v="1"/></i><i t="grand"><x/></i></rowItems>
+  <colItems count="1"><i/></colItems>
+  <dataFields count="1"><dataField name="Sum of Amount" fld="1" baseField="0" baseItem="0"/></dataFields>
+  <pivotTableStyleInfo name="PivotStyleLight16" showRowHeaders="1" showColHeaders="1"
+      showRowStripes="0" showColStripes="0" showLastColumn="1"/>
+</pivotTableDefinition>"""
+
+
+
+def pivot_table() -> Workbook:
+    """A pivot table summing amounts by category, with its cache."""
+    wb = _new_workbook("Pivot table")
+    ws = wb.active
+    ws.title = "Data"
+    for row in PIVOT_DATA:
+        ws.append(row)
+    # The values of the pivot table as Excel shows (and stores) them.
+    for coord, value in {"D1": "Row Labels", "E1": "Sum of Amount", "D2": "Fruit", "E2": 4,
+                         "D3": "Veg", "E3": 6, "D4": "Grand Total", "E4": 10}.items():
+        ws[coord] = value
+
+    cache = CacheDefinition.from_tree(fromstring(PIVOT_CACHE))
+    cache.records = RecordList.from_tree(fromstring(PIVOT_RECORDS))
+    pivot = TableDefinition.from_tree(fromstring(PIVOT_TABLE))
+    pivot.cache = cache
+    ws.add_pivot(pivot)
+    return wb
+
+
 EXAMPLES = {
     "01-basic-data": basic_data,
     "02-styles": styles,
@@ -289,6 +362,7 @@ EXAMPLES = {
     "04-images-charts": images_and_charts,
     "05-rich-text": rich_text,
     "06-workbook-features": workbook_features,
+    "07-pivot-table": pivot_table,
 }
 
 

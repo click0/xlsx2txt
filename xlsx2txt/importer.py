@@ -24,6 +24,7 @@ from openpyxl.worksheet.table import Table
 from openpyxl.xml.functions import fromstring
 
 from xlsx2txt.drawings import build_image, chart_from_json
+from xlsx2txt.pivots import PivotBuilder
 from xlsx2txt.styles import (
     StyleApplier,
     rich_text_from_json,
@@ -138,7 +139,7 @@ def _import_dimensions(ws, dims: Dict[str, Any], applier: StyleApplier) -> None:
 
 
 def _import_sheet(wb: Workbook, sheet: Dict[str, Any], applier: StyleApplier,
-                  media: Dict[str, bytes]) -> None:
+                  media: Dict[str, bytes], pivots: PivotBuilder) -> None:
     ws = wb.create_sheet(sheet["name"])
     ws.sheet_state = sheet.get("state", "visible")
 
@@ -208,6 +209,9 @@ def _import_sheet(wb: Workbook, sheet: Dict[str, Any], applier: StyleApplier,
 
     for chart in sheet.get("charts", []):
         ws.add_chart(chart_from_json(chart))
+
+    for entry in sheet.get("pivotTables", []):
+        ws.add_pivot(pivots.table(entry))
 
     for xml in sheet.get("tables", []):
         ws.add_table(Table.from_tree(fromstring(xml)))
@@ -280,9 +284,10 @@ def build_workbook(model: Dict[str, Any]) -> Workbook:
     styles = model["styles"]
     _apply_default_style(wb, styles)
     applier = StyleApplier(styles)
+    pivots = PivotBuilder(model.get("pivots") or {})
 
     for sheet in model["sheets"]:
-        _import_sheet(wb, sheet, applier, model.get("media") or {})
+        _import_sheet(wb, sheet, applier, model.get("media") or {}, pivots)
 
     for data in sorted(workbook.get("chartsheets", []), key=lambda d: d["position"]):
         chartsheet = wb.create_chartsheet(data["name"], data["position"])

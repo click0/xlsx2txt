@@ -1,0 +1,16 @@
+<pivotCacheDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" refreshOnLoad="1" recordCount="4" r:id="rId1">
+  <cacheSource type="worksheet">
+    <worksheetSource ref="A1:B5" sheet="Data" />
+  </cacheSource>
+  <cacheFields count="2">
+    <cacheField name="Category" uniqueList="1" numFmtId="0" sqlType="0" hierarchy="0" level="0" databaseField="1">
+      <sharedItems count="2">
+        <s v="Fruit" />
+        <s v="Veg" />
+      </sharedItems>
+    </cacheField>
+    <cacheField name="Amount" uniqueList="1" numFmtId="0" sqlType="0" hierarchy="0" level="0" databaseField="1">
+      <sharedItems count="0" containsInteger="1" containsNumber="1" containsSemiMixedTypes="0" containsString="0" minValue="1" maxValue="4" />
+    </cacheField>
+  </cacheFields>
+</pivotCacheDefinition>
