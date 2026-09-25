@@ -164,7 +164,7 @@ BSD 3-Clause License
 
 ## Авторські права
 
-Copyright (c) 2025, Vladyslav V. Prodan
+Copyright (c) 2025-2026, Vladyslav V. Prodan
 
 ## Подяки
 
