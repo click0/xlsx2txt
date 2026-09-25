@@ -13,7 +13,9 @@ from openpyxl.formatting.rule import ColorScale, DataBar, IconSet, Rule
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 from openpyxl.utils.datetime import CALENDAR_MAC_1904, CALENDAR_WINDOWS_1900
 from openpyxl.utils.indexed_list import IndexedList
+from openpyxl.packaging.relationship import Relationship
 from openpyxl.workbook.defined_name import DefinedName
+from openpyxl.workbook.external_link.external import ExternalLink
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.formula import ArrayFormula, DataTableFormula
 from openpyxl.worksheet.hyperlink import Hyperlink
@@ -31,6 +33,8 @@ from xlsx2txt.styles import (
     fill_from_json,
     font_from_json,
 )
+
+EXTERNAL_LINK_PATH = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/externalLinkPath"
 
 _RULE_XML_CLASSES = {"colorScale": ColorScale, "dataBar": DataBar, "iconSet": IconSet}
 
@@ -229,6 +233,29 @@ _CONTENT_TYPES = (
 )
 
 
+def _custom_property(data: Dict[str, Any]):
+    from openpyxl.packaging import custom
+
+    cls = getattr(custom, data.get("type", ""), None)
+    if cls is None or not data.get("type", "").endswith("Property"):
+        raise ValueError(f"Unknown custom property type: {data.get('type')!r}")
+    value = data["value"]
+    if cls is custom.DateTimeProperty:
+        value = datetime.datetime.fromisoformat(value)
+    return cls(name=data["name"], value=value)
+
+
+def _external_link(data: Dict[str, Any]) -> ExternalLink:
+    link = ExternalLink.from_tree(fromstring(data["xml"]))
+    link.file_link = Relationship(
+        Id="rId1",
+        Type=data.get("type", EXTERNAL_LINK_PATH),
+        Target=data["target"],
+        TargetMode=data.get("targetMode", "External"),
+    )
+    return link
+
+
 def _vba_archive(parts: Dict[str, bytes]) -> zipfile.ZipFile:
     """Build an in-memory archive that openpyxl merges into the saved file."""
     buffer = io.BytesIO()
@@ -257,9 +284,22 @@ def build_workbook(model: Dict[str, Any]) -> Workbook:
     for sheet in model["sheets"]:
         _import_sheet(wb, sheet, applier, model.get("media") or {})
 
+    for data in sorted(workbook.get("chartsheets", []), key=lambda d: d["position"]):
+        chartsheet = wb.create_chartsheet(data["name"], data["position"])
+        chartsheet.sheet_state = data.get("state", "visible")
+        for chart in data.get("charts", []):
+            chartsheet.add_chart(chart_from_json(chart))
+
+    for data in workbook.get("customProperties", []):
+        wb.custom_doc_props.append(_custom_property(data))
+
+    for data in workbook.get("externalLinks", []):
+        wb._external_links.append(_external_link(data))
+
     if wb.worksheets:
         active = workbook.get("activeSheet", 0)
-        wb.active = active if 0 <= active < len(wb.worksheets) else 0
+        active = active if 0 <= active < len(wb.worksheets) else 0
+        wb.active = wb._sheets.index(wb.worksheets[active])
 
     for name, value in workbook.get("properties", {}).items():
         if name in ("created", "modified", "lastPrinted"):

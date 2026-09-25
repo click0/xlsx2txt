@@ -61,6 +61,10 @@ def _dims_view(dims: Dict[str, Any], styles: Dict[str, Any]) -> Dict[str, Any]:
         entries = {}
         for key, data in dims.get(kind, {}).items():
             data = dict(data)
+            # openpyxl cannot write a zero width: a hidden 0-width column comes
+            # back with the default width 13. Both look the same in Excel.
+            if kind == "columns" and data.get("hidden") and data.get("width") in (0, 13):
+                data.pop("width")
             if "s" in data:
                 data["style"] = resolve_style(styles, data.pop("s"))
             entries[key] = data
@@ -164,7 +168,9 @@ def validate_model(model: Dict[str, Any]) -> List[str]:
                 errors.append(f"cellStyles[{i}].{key}: invalid reference {ref!r}")
 
     names = [s.get("name") for s in model.get("sheets", [])]
-    if len(set(n.lower() for n in names if n)) != len(names):
+    chartsheet_names = [c.get("name") for c in model.get("workbook", {}).get("chartsheets", [])]
+    all_names = names + chartsheet_names
+    if len(set(n.lower() for n in all_names if n)) != len(all_names):
         errors.append("duplicate or empty sheet names")
     listed = model.get("workbook", {}).get("sheets")
     if listed is not None and listed != names:

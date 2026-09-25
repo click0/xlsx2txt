@@ -14,6 +14,7 @@ from xlsx2txt import __version__
 from xlsx2txt.converter import EXCEL_SUFFIXES, export_xlsx, import_dir, load_model, verify_dir
 from xlsx2txt.compare import diff_models
 from xlsx2txt.storage import FormatError, read_model
+from xlsx2txt.text import render_text
 
 # Errors reported without a traceback: broken input files make openpyxl and
 # zipfile raise a wide range of exceptions.
@@ -147,6 +148,23 @@ def diff(path1, path2, ignore_cached):
 
 @main.command()
 @click.argument("input_path", type=click.Path(exists=True))
+@click.option("--no-styles", is_flag=True, help="Do not describe cell formatting.")
+@click.option("--no-cached-values", is_flag=True, help="Do not show last calculated formula results.")
+def cat(input_path, no_styles, no_cached_values):
+    """Print an Excel file or export as plain text, one line per cell.
+
+    Suitable as a Git textconv driver, so that `git diff` shows changes
+    inside .xlsx files (see README, "Git integration").
+    """
+    try:
+        model = load_model(input_path, cached_values=not no_cached_values)
+    except INPUT_ERRORS as exc:
+        _fail(str(exc))
+    click.echo(render_text(model, styles=not no_styles), nl=False)
+
+
+@main.command()
+@click.argument("input_path", type=click.Path(exists=True))
 def info(input_path):
     """Show information about file or directory."""
     try:
@@ -159,9 +177,11 @@ def info(input_path):
     click.echo(f"Source:   {manifest['source']['name']} ({manifest['source']['type']})")
     click.echo(f"Format:   {manifest['format']} v{manifest['formatVersion']} ({manifest['generator']})")
     props = workbook.get("properties", {})
-    for key in ("title", "creator", "lastModifiedBy", "created", "modified"):
+    labels = {"title": "Title", "creator": "Author", "lastModifiedBy": "Editor",
+              "created": "Created", "modified": "Modified"}
+    for key, label in labels.items():
         if props.get(key):
-            click.echo(f"{key + ':':<9} {props[key]}")
+            click.echo(f"{label + ':':<9} {props[key]}")
     click.echo(f"Styles:   {len(model['styles'].get('cellStyles', []))}")
     click.echo(f"Names:    {len(workbook.get('definedNames', []))}")
     vba = "no"
@@ -169,6 +189,9 @@ def info(input_path):
         modules = len(model.get("vbaSources") or {})
         vba = f"yes ({modules} module(s) in vba/modules)" if modules else "yes"
     click.echo(f"VBA:      {vba}")
+    links = workbook.get("externalLinks", [])
+    if links:
+        click.echo(f"Links:    {', '.join(link['target'] for link in links)}")
     click.echo(f"Sheets:   {len(model['sheets'])}")
     for sheet in model["sheets"]:
         cells = sheet.get("cells", {})
@@ -180,6 +203,8 @@ def info(input_path):
             f"{len(sheet.get('mergedCells', []))} merged range(s), "
             f"{len(sheet.get('images', []))} image(s), {len(sheet.get('charts', []))} chart(s)"
         )
+    for chartsheet in workbook.get("chartsheets", []):
+        click.echo(f"  - {chartsheet['name']} (chart sheet): {len(chartsheet.get('charts', []))} chart(s)")
     for warning in manifest.get("warnings", []):
         click.echo(f"Warning: {warning}")
 
