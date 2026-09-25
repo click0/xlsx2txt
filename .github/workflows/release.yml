@@ -6,7 +6,9 @@ name: release
 #     with the wheel and sdist are created.
 #  2. Releases -> "Draft a new release" with tag v<version> -> Publish.
 #     Tests run, and the built files are attached to that release.
-# The version must match __version__ in xlsx2txt/__init__.py.
+# The version must match __version__ in xlsx2txt/__init__.py, and
+# CHANGELOG.md / CHANGELOG_UK.md must have a section for it: that section
+# becomes the release description (scripts/release_notes.py).
 
 on:
   workflow_dispatch:
@@ -80,6 +82,20 @@ jobs:
             exit 1
           fi
 
+      - name: Release notes from the changelogs
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p notes
+          python scripts/release_notes.py "$VERSION" > notes/notes.md
+          cat notes/notes.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: notes
+          path: notes/notes.md
+          if-no-files-found: error
+
       - name: Build
         run: |
           python -m pip install --upgrade build twine
@@ -113,6 +129,11 @@ jobs:
           name: dist
           path: dist/
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: notes
+          path: notes/
+
       - name: Create release
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -126,7 +147,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "v${VERSION}" \
-            --generate-notes $flags
+            --notes-file notes/notes.md $flags
 
       - name: Attach files to release
         if: github.event_name == 'release'
@@ -134,6 +155,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ github.event.release.tag_name }}
         run: gh release upload "$TAG_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Use the changelog as description
+        # Replace only an empty or GitHub-generated description; text written
+        # by hand in the release form is kept.
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+          BODY: ${{ github.event.release.body }}
+        run: |
+          if [ -z "${BODY//[[:space:]]/}" ] || printf '%s' "$BODY" | grep -q '\*\*Full Changelog\*\*'; then
+            gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --notes-file notes/notes.md
+          else
+            echo "Release description was written by hand; keeping it."
+          fi
 
   pypi:
     needs: [build, github-release]

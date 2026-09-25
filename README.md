@@ -179,12 +179,15 @@ git config diff.xlsx.textconv "xlsx2txt cat"
 
 Releases are made from the GitHub web UI (workflow `.github/workflows/release.yml`):
 
-1. Bump `__version__` in `xlsx2txt/__init__.py` (the package version is read from it) and merge to `main`.
+1. Bump `__version__` in `xlsx2txt/__init__.py` (the package version is read from it), describe the
+   version in [CHANGELOG.md](CHANGELOG.md) and [CHANGELOG_UK.md](CHANGELOG_UK.md) (section
+   `## [X.Y.Z] - date`) and merge to `main`. That section becomes the release description.
 2. Either
    - **Actions → release → Run workflow**, enter the version (e.g. `0.1.0`); the workflow runs the tests,
      builds the wheel and sdist, creates the tag `v0.1.0` and a GitHub Release with the files; or
    - **Releases → Draft a new release**, create tag `v0.1.0`, press **Publish**; the workflow runs the tests
-     and attaches the built files to that release.
+     and attaches the built files to that release. Leave the description empty (or use
+     "Generate release notes"): it is replaced by the changelog text; a description typed by hand is kept.
 3. Optional PyPI publishing: add a [trusted publisher](https://docs.pypi.org/trusted-publishers/) on PyPI
    (workflow `release.yml`, environment `pypi`), then tick **pypi** when running the workflow, or set the
    repository variable `PUBLISH_TO_PYPI=true` for releases created in the Releases page.
