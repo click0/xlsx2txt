@@ -1,0 +1,20 @@
+{
+  "epoch": 1900,
+  "sheets": ["Data"],
+  "activeSheet": 0,
+  "properties": {"title": "Images and charts", "creator": "xlsx2txt examples", "created": "2026-01-01T12:00:00", "modified": "2026-01-01T12:00:00"},
+  "definedNames": [],
+  "chartsheets": [
+    {
+      "name": "Pie chart",
+      "position": 1,
+      "charts": [
+        {
+          "anchor": {"type": "absolute", "position": [0, 0], "size": [0, 0]},
+          "xml": "<chartSpace xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns=\"http://schemas.openxmlformats.org/drawingml/2006/chart\"><chart><title><tx><rich><a:bodyPr /><a:p><a:pPr><a:defRPr /></a:pPr><a:r><a:t>Revenue share</a:t></a:r></a:p></rich></tx></title><plotArea><pieChart><varyColors val=\"1\" /><ser><idx val=\"0\" /><order val=\"0\" /><tx><strRef><f>'Data'!B1</f></strRef></tx><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr><cat><numRef><f>'Data'!$A$2:$A$5</f></numRef></cat><val><numRef><f>'Data'!$B$2:$B$5</f></numRef></val></ser><firstSliceAng val=\"0\" /></pieChart></plotArea><legend><legendPos val=\"r\" /></legend><plotVisOnly val=\"1\" /><dispBlanksAs val=\"gap\" /></chart></chartSpace>"
+        }
+      ]
+    }
+  ],
+  "calculation": {"fullCalcOnLoad": true}
+}

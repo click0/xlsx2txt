@@ -1,0 +1,12 @@
+{
+  "name": "Settings",
+  "state": "hidden",
+  "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
+  "usedRange": "A1:B1",
+  "dimensions": {"columns": {}, "rows": {}},
+  "mergedCells": [],
+  "print": {
+    "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
+  },
+  "cells": {"A1": {"v": "VAT", "t": "s"}, "B1": {"v": 0.2, "t": "n"}}
+}

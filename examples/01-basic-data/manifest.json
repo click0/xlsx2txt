@@ -1,0 +1,10 @@
+{
+  "format": "xlsx2txt",
+  "formatVersion": 1,
+  "generator": "xlsx2txt 0.3.0",
+  "source": {"name": "01-basic-data.xlsx", "type": "xlsx"},
+  "sheetCount": 1,
+  "cellCount": 42,
+  "hasVba": false,
+  "warnings": []
+}

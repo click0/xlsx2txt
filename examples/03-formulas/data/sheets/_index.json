@@ -1,0 +1,5 @@
+[
+  {"name": "Orders", "file": "Orders.json"},
+  {"name": "Settings", "file": "Settings.json"},
+  {"name": "Summary", "file": "Summary.json"}
+]

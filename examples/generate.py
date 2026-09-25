@@ -1,0 +1,336 @@
+"""Generate the example workbooks and their xlsx2txt exports.
+
+Run from the repository root:
+
+    python examples/generate.py
+
+Every example is built with openpyxl and saved with fixed document dates, so
+running the script again produces the same content.
+"""
+
+import datetime
+import io
+import re
+import sys
+import zipfile
+from pathlib import Path
+
+from openpyxl import Workbook
+from openpyxl.cell.rich_text import CellRichText, TextBlock
+from openpyxl.cell.text import InlineFont
+from openpyxl.chart import BarChart, LineChart, PieChart, Reference
+from openpyxl.comments import Comment
+from openpyxl.drawing.image import Image
+from openpyxl.formatting.rule import CellIsRule, ColorScaleRule, DataBarRule
+from openpyxl.packaging.custom import BoolProperty, StringProperty
+from openpyxl.packaging.relationship import Relationship
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.workbook.defined_name import DefinedName
+from openpyxl.workbook.external_link.external import (
+    ExternalBook,
+    ExternalCell,
+    ExternalLink,
+    ExternalRow,
+    ExternalSheetData,
+    ExternalSheetDataSet,
+    ExternalSheetNames,
+)
+from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.worksheet.formula import ArrayFormula
+from openpyxl.worksheet.table import Table, TableStyleInfo
+
+EXAMPLES_DIR = Path(__file__).resolve().parent
+FIXED_DATE = datetime.datetime(2026, 1, 1, 12, 0, 0)
+
+PRODUCTS = [
+    ("Widget", "Hardware", 120, 9.99, datetime.date(2026, 1, 5), True),
+    ("Gadget", "Hardware", 45, 24.50, datetime.date(2026, 1, 12), True),
+    ("Gizmo", "Hardware", 80, 14.25, datetime.date(2026, 2, 3), False),
+    ("Support plan", "Services", 12, 199.00, datetime.date(2026, 2, 20), True),
+    ("Training", "Services", 5, 450.00, datetime.date(2026, 3, 9), False),
+    ("Консультація", "Послуги", 3, 1200.00, datetime.date(2026, 3, 30), True),
+]
+HEADER_FONT = Font(bold=True, color="FFFFFFFF")
+HEADER_FILL = PatternFill("solid", fgColor="FF305496")
+
+
+def _new_workbook(title: str) -> Workbook:
+    wb = Workbook()
+    wb.properties.title = title
+    wb.properties.creator = "xlsx2txt examples"
+    wb.properties.created = FIXED_DATE
+    return wb
+
+
+def _header(ws, values) -> None:
+    ws.append(values)
+    for cell in ws[ws.max_row]:
+        cell.font = HEADER_FONT
+        cell.fill = HEADER_FILL
+        cell.alignment = Alignment(horizontal="center")
+
+
+def _png(color, size) -> bytes:
+    from PIL import Image as PILImage
+
+    buffer = io.BytesIO()
+    PILImage.new("RGB", size, color).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# Examples
+# ---------------------------------------------------------------------------
+
+def basic_data() -> Workbook:
+    """Plain values of every type, column widths, freeze panes and a filter."""
+    wb = _new_workbook("Basic data")
+    ws = wb.active
+    ws.title = "Sales"
+    _header(ws, ["Product", "Category", "Quantity", "Price", "Date", "In stock"])
+    for row in PRODUCTS:
+        ws.append(row)
+    for row in ws.iter_rows(min_row=2, min_col=4, max_col=4):
+        row[0].number_format = "#,##0.00"
+    for row in ws.iter_rows(min_row=2, min_col=5, max_col=5):
+        row[0].number_format = "yyyy-mm-dd"
+    for column, width in zip("ABCDEF", (18, 12, 10, 10, 12, 10)):
+        ws.column_dimensions[column].width = width
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:F{ws.max_row}"
+    return wb
+
+
+def styles() -> Workbook:
+    """Fonts, fills, borders, alignment, number formats, merged cells,
+    conditional formatting and data validation."""
+    wb = _new_workbook("Styles")
+    ws = wb.active
+    ws.title = "Styles"
+
+    ws.merge_cells("A1:E1")
+    ws["A1"] = "Quarterly report"
+    ws["A1"].font = Font(name="Arial", size=16, bold=True, color="FF1F4E79")
+    ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[1].height = 28
+
+    thin = Side(style="thin", color="FF999999")
+    _header(ws, ["Quarter", "Revenue", "Costs", "Margin", "Status"])
+    rows = [("Q1", 125000, 98000), ("Q2", 142000, 101000), ("Q3", 98000, 105000), ("Q4", 171000, 120000)]
+    for quarter, revenue, costs in rows:
+        ws.append([quarter, revenue, costs, (revenue - costs) / revenue, "open"])
+    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, max_col=5):
+        for cell in row:
+            cell.border = Border(left=thin, right=thin, top=thin, bottom=thin)
+        row[1].number_format = '#,##0 "UAH"'
+        row[2].number_format = '#,##0 "UAH"'
+        row[3].number_format = "0.0%"
+
+    ws["A8"] = "Wrapped text that does not fit into one line of the cell"
+    ws["A8"].alignment = Alignment(wrap_text=True, vertical="top")
+    ws["B8"] = "Rotated"
+    ws["B8"].alignment = Alignment(text_rotation=45)
+    ws["C8"] = "Italic strike"
+    ws["C8"].font = Font(italic=True, strike=True)
+    ws["D8"] = "Theme color"
+    ws["D8"].fill = PatternFill("solid", fgColor="FFFFF2CC")
+
+    ws.conditional_formatting.add("D3:D6", CellIsRule(operator="lessThan", formula=["0"],
+                                                       font=Font(color="FF9C0006"),
+                                                       fill=PatternFill("solid", bgColor="FFFFC7CE")))
+    ws.conditional_formatting.add("B3:B6", DataBarRule(start_type="min", end_type="max", color="FF638EC6"))
+    ws.conditional_formatting.add("C3:C6", ColorScaleRule(start_type="min", start_color="FF63BE7B",
+                                                          end_type="max", end_color="FFF8696B"))
+
+    status = DataValidation(type="list", formula1='"open,closed,archived"', allow_blank=False,
+                            showErrorMessage=True, error="Choose a status from the list")
+    status.add("E3:E6")
+    ws.add_data_validation(status)
+
+    for column, width in zip("ABCDE", (14, 16, 16, 10, 12)):
+        ws.column_dimensions[column].width = width
+    return wb
+
+
+def formulas() -> Workbook:
+    """Formulas, an array formula, named ranges, a table, a hidden sheet,
+    comments and hyperlinks."""
+    wb = _new_workbook("Formulas")
+    ws = wb.active
+    ws.title = "Orders"
+    _header(ws, ["Product", "Quantity", "Price", "Total"])
+    for index, (name, _, quantity, price, _, _) in enumerate(PRODUCTS[:5], start=2):
+        ws.append([name, quantity, price, f"=B{index}*C{index}"])
+    last = ws.max_row
+    ws[f"A{last + 1}"] = "Sum"
+    ws[f"D{last + 1}"] = f"=SUM(D2:D{last})"
+    ws[f"A{last + 2}"] = "Average price"
+    ws[f"D{last + 2}"] = f"=AVERAGE(C2:C{last})"
+    ws[f"A{last + 3}"] = "With VAT"
+    ws[f"D{last + 3}"] = f"=D{last + 1}*(1+VAT)"
+    ws["F1"] = "Doubled"
+    ws["F2"] = ArrayFormula(f"F2:F{last}", f"=B2:B{last}*2")
+
+    table = Table(displayName="Orders", ref=f"A1:D{last}")
+    table.tableStyleInfo = TableStyleInfo(name="TableStyleMedium2", showRowStripes=True)
+    ws.add_table(table)
+
+    ws["A1"].comment = Comment("Product names come from the catalog", "Analyst")
+    ws[f"A{last + 5}"] = "Documentation"
+    ws[f"A{last + 5}"].hyperlink = "https://github.com/click0/xlsx2txt"
+    ws[f"A{last + 5}"].style = "Hyperlink"
+
+    settings = wb.create_sheet("Settings")
+    settings["A1"] = "VAT"
+    settings["B1"] = 0.2
+    settings.sheet_state = "hidden"
+    wb.defined_names["VAT"] = DefinedName("VAT", attr_text="Settings!$B$1")
+
+    summary = wb.create_sheet("Summary")
+    summary["A1"] = "Orders total"
+    summary["B1"] = f"=Orders!D{last + 1}"
+    summary["A2"] = "Largest order"
+    summary["B2"] = f"=MAX(Orders!D2:D{last})"
+    return wb
+
+
+def images_and_charts() -> Workbook:
+    """An image, a bar and a line chart on a sheet, and a chart sheet."""
+    wb = _new_workbook("Images and charts")
+    ws = wb.active
+    ws.title = "Data"
+    _header(ws, ["Month", "Revenue", "Costs"])
+    for month, revenue, costs in [("Jan", 42, 30), ("Feb", 47, 31), ("Mar", 51, 35), ("Apr", 49, 33)]:
+        ws.append([month, revenue, costs])
+
+    ws.add_image(Image(io.BytesIO(_png((48, 84, 150), (120, 40)))), "E1")
+
+    categories = Reference(ws, min_col=1, min_row=2, max_row=5)
+    bar = BarChart()
+    bar.title = "Revenue and costs"
+    bar.add_data(Reference(ws, min_col=2, max_col=3, min_row=1, max_row=5), titles_from_data=True)
+    bar.set_categories(categories)
+    ws.add_chart(bar, "E4")
+
+    line = LineChart()
+    line.title = "Revenue trend"
+    line.add_data(Reference(ws, min_col=2, min_row=1, max_row=5), titles_from_data=True)
+    line.set_categories(categories)
+    ws.add_chart(line, "E20")
+
+    pie = PieChart()
+    pie.title = "Revenue share"
+    pie.add_data(Reference(ws, min_col=2, min_row=1, max_row=5), titles_from_data=True)
+    pie.set_categories(categories)
+    wb.create_chartsheet("Pie chart").add_chart(pie)
+    return wb
+
+
+def rich_text() -> Workbook:
+    """Cells with several differently formatted runs of text."""
+    wb = _new_workbook("Rich text")
+    ws = wb.active
+    ws.title = "Notes"
+    ws["A1"] = CellRichText([
+        "Status: ",
+        TextBlock(InlineFont(b=True, color="FF00B050"), "approved"),
+        " by ",
+        TextBlock(InlineFont(i=True), "finance"),
+    ])
+    ws["A2"] = CellRichText([
+        TextBlock(InlineFont(rFont="Courier New", sz=10), "E=mc"),
+        TextBlock(InlineFont(rFont="Courier New", sz=10, vertAlign="superscript"), "2"),
+    ])
+    ws["A3"] = CellRichText([
+        "Увага: ",
+        TextBlock(InlineFont(b=True, u="single", color="FFC00000"), "термін до 31.03"),
+    ])
+    ws.column_dimensions["A"].width = 40
+    return wb
+
+
+def workbook_features() -> Workbook:
+    """Link to another workbook, custom properties, protection and printing."""
+    wb = _new_workbook("Workbook features")
+    ws = wb.active
+    ws.title = "Report"
+    ws["A1"] = "Budget from another file"
+    ws["B1"] = "=[1]Budget!B2"
+    ws["A2"] = "Protected sheet, print settings: landscape, fit to width"
+
+    book = ExternalBook(
+        sheetNames=ExternalSheetNames(sheetName=["Budget"]),
+        sheetDataSet=ExternalSheetDataSet(sheetData=[
+            ExternalSheetData(sheetId=0, row=[ExternalRow(r=2, cell=[ExternalCell(r="B2", v="250000")])]),
+        ]),
+        id="rId1",
+    )
+    link = ExternalLink(externalBook=book)
+    link.file_link = Relationship(type="externalLinkPath", Target="budget-2026.xlsx", TargetMode="External")
+    wb._external_links.append(link)
+
+    wb.custom_doc_props.append(StringProperty(name="Department", value="Finance"))
+    wb.custom_doc_props.append(BoolProperty(name="Approved", value=True))
+
+    ws.protection.sheet = True
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.fitToWidth = 1
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.print_title_rows = "1:1"
+    ws.sheet_properties.tabColor = "FFC00000"
+    ws.column_dimensions["A"].width = 60
+    return wb
+
+
+EXAMPLES = {
+    "01-basic-data": basic_data,
+    "02-styles": styles,
+    "03-formulas": formulas,
+    "04-images-charts": images_and_charts,
+    "05-rich-text": rich_text,
+    "06-workbook-features": workbook_features,
+}
+
+
+# ---------------------------------------------------------------------------
+# Saving
+# ---------------------------------------------------------------------------
+
+_MODIFIED = re.compile(rb"<dcterms:modified([^>]*)>[^<]*</dcterms:modified>")
+
+
+def save_deterministic(wb: Workbook, path: Path) -> None:
+    """Save reproducibly: openpyxl stamps the document and zip entries with 'now'."""
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    stamp = FIXED_DATE.strftime("%Y-%m-%dT%H:%M:%SZ").encode()
+    source = zipfile.ZipFile(io.BytesIO(buffer.getvalue()))
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as target:
+        for item in source.infolist():
+            data = source.read(item.filename)
+            if item.filename == "docProps/core.xml":
+                data = _MODIFIED.sub(lambda m: b"<dcterms:modified" + m.group(1) + b">" + stamp
+                                     + b"</dcterms:modified>", data)
+            info = zipfile.ZipInfo(item.filename, date_time=(1980, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            target.writestr(info, data)
+
+
+def generate(target_dir: Path = EXAMPLES_DIR, export: bool = True) -> list:
+    """Write every example workbook (and its export) into ``target_dir``."""
+    from xlsx2txt import export_xlsx
+
+    written = []
+    for name, build in EXAMPLES.items():
+        path = target_dir / f"{name}.xlsx"
+        save_deterministic(build(), path)
+        written.append(path)
+        if export:
+            export_xlsx(path, target_dir / name, force=True)
+    return written
+
+
+if __name__ == "__main__":
+    sys.path.insert(0, str(EXAMPLES_DIR.parent))
+    for written_path in generate():
+        print(f"{written_path.relative_to(EXAMPLES_DIR.parent)} -> {written_path.stem}/")

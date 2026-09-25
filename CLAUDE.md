@@ -22,6 +22,12 @@ pip install -e ".[dev]"
 pytest -q
 ```
 
+Example workbooks live in `examples/` (built by `examples/generate.py`, with
+their exports next to them); test-only data lives in `tests/fixtures/`. After
+changing the export format or the examples, run `python examples/generate.py`
+and commit the result — `tests/test_examples.py` fails otherwise. Never commit
+users' own Excel files.
+
 CI (`.github/workflows/tests.yml`) runs the tests on Python 3.9–3.13; keep
 code compatible with Python 3.9.
 

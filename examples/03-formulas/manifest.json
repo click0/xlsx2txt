@@ -1,0 +1,10 @@
+{
+  "format": "xlsx2txt",
+  "formatVersion": 1,
+  "generator": "xlsx2txt 0.3.0",
+  "source": {"name": "03-formulas.xlsx", "type": "xlsx"},
+  "sheetCount": 3,
+  "cellCount": 39,
+  "hasVba": false,
+  "warnings": []
+}

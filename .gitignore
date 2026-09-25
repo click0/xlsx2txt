@@ -1,3 +1,11 @@
+# Excel files at the repository root are never committed (keep private data out
+# of git); examples live in examples/, test data in tests/fixtures/.
+/*.xlsx
+/*.xlsm
+/*.xltx
+/*.xltm
+~$*.xls*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

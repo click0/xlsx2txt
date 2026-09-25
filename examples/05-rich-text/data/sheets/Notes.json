@@ -1,0 +1,35 @@
+{
+  "name": "Notes",
+  "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
+  "usedRange": "A1:A3",
+  "dimensions": {"columns": {"A": {"width": 40.0}}, "rows": {}},
+  "mergedCells": [],
+  "print": {
+    "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
+  },
+  "cells": {
+    "A1": {
+      "v": [
+        "Status: ",
+        {"text": "approved", "font": {"b": true, "color": "FF00B050"}},
+        " by ",
+        {"text": "finance", "font": {"i": true}}
+      ],
+      "t": "rs"
+    },
+    "A2": {
+      "v": [
+        {"text": "E=mc", "font": {"rFont": "Courier New", "sz": 10.0}},
+        {"text": "2", "font": {"rFont": "Courier New", "sz": 10.0, "vertAlign": "superscript"}}
+      ],
+      "t": "rs"
+    },
+    "A3": {
+      "v": [
+        "Увага: ",
+        {"text": "термін до 31.03", "font": {"b": true, "u": "single", "color": "FFC00000"}}
+      ],
+      "t": "rs"
+    }
+  }
+}

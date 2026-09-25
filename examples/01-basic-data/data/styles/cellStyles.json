@@ -1,0 +1,6 @@
+[
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "General"},
+  {"font": 1, "fill": 1, "border": 0, "alignment": 1, "protection": 0, "numFmt": "General"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "#,##0.00"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "yyyy-mm-dd"}
+]

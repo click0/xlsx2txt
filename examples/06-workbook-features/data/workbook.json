@@ -1,0 +1,20 @@
+{
+  "epoch": 1900,
+  "sheets": ["Report"],
+  "activeSheet": 0,
+  "properties": {"title": "Workbook features", "creator": "xlsx2txt examples", "created": "2026-01-01T12:00:00", "modified": "2026-01-01T12:00:00"},
+  "definedNames": [],
+  "customProperties": [
+    {"name": "Department", "type": "StringProperty", "value": "Finance"},
+    {"name": "Approved", "type": "BoolProperty", "value": true}
+  ],
+  "externalLinks": [
+    {
+      "target": "budget-2026.xlsx",
+      "targetMode": "External",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/externalLinkPath",
+      "xml": "<externalLink xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><externalBook r:id=\"rId1\"><sheetNames><sheetName val=\"Budget\" /></sheetNames><sheetDataSet><sheetData sheetId=\"0\"><row r=\"2\"><cell r=\"B2\"><v>250000</v></cell></row></sheetData></sheetDataSet></externalBook></externalLink>"
+    }
+  ],
+  "calculation": {"fullCalcOnLoad": true}
+}
