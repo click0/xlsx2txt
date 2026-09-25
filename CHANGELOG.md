@@ -6,8 +6,9 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 
 ## [Unreleased]
 
-### Changed
-- Python 3.11 or newer is required (was 3.9); tests run on 3.11–3.14.
+## [0.4.0] - 2026-09-25
+
+**Python 3.11 or newer is now required.** On Python 3.9/3.10 keep using 0.3.0.
 
 ### Added
 - Pivot tables: the table definition, its cache and cached records are
@@ -22,6 +23,9 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
   extended conditional formatting/validation and any unknown part of the
   file. openpyxl's own notes are collected into the same list instead of
   being printed to the console.
+
+### Changed
+- Python 3.11 or newer is required (was 3.9); tests run on 3.11–3.14.
 
 ## [0.3.0] - 2026-09-25
 
@@ -81,7 +85,8 @@ First working version.
   checksums in `_verify/`.
 - Releases from the GitHub web interface.
 
-[Unreleased]: https://github.com/click0/xlsx2txt/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/click0/xlsx2txt/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/click0/xlsx2txt/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/click0/xlsx2txt/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/click0/xlsx2txt/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/click0/xlsx2txt/releases/tag/v0.1.0
