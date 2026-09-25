@@ -4,7 +4,7 @@ import datetime
 import io
 import zipfile
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.cell.cell import MergedCell
@@ -62,12 +62,12 @@ def decode_value(value: Any, value_type: str) -> Any:
     return value
 
 
-def _set_attrs(obj: Any, data: Dict[str, Any]) -> None:
+def _set_attrs(obj: Any, data: dict[str, Any]) -> None:
     for name, value in data.items():
         setattr(obj, name, value)
 
 
-def _apply_default_style(wb: Workbook, styles: Dict[str, Any]) -> None:
+def _apply_default_style(wb: Workbook, styles: dict[str, Any]) -> None:
     """Make the exported default style (index 0) the workbook default."""
     if not styles.get("cellStyles"):
         return
@@ -79,7 +79,7 @@ def _apply_default_style(wb: Workbook, styles: Dict[str, Any]) -> None:
     wb._borders = IndexedList([border_from_json(styles["borders"][default["border"]])])
 
 
-def _write_cell(ws, coord: str, record: Dict[str, Any], applier: StyleApplier) -> None:
+def _write_cell(ws, coord: str, record: dict[str, Any], applier: StyleApplier) -> None:
     column_letter, row = coordinate_from_string(coord)
     cell = ws.cell(row=row, column=column_index_from_string(column_letter))
 
@@ -112,7 +112,7 @@ def _write_cell(ws, coord: str, record: Dict[str, Any], applier: StyleApplier) -
         cell.comment = Comment(comment.get("text", ""), comment.get("author") or "")
 
 
-def _import_dimensions(ws, dims: Dict[str, Any], applier: StyleApplier) -> None:
+def _import_dimensions(ws, dims: dict[str, Any], applier: StyleApplier) -> None:
     for letter, data in dims.get("columns", {}).items():
         dim = ws.column_dimensions[letter]
         if "width" in data:
@@ -138,8 +138,8 @@ def _import_dimensions(ws, dims: Dict[str, Any], applier: StyleApplier) -> None:
             applier.apply(dim, data["s"])
 
 
-def _import_sheet(wb: Workbook, sheet: Dict[str, Any], applier: StyleApplier,
-                  media: Dict[str, bytes], pivots: PivotBuilder) -> None:
+def _import_sheet(wb: Workbook, sheet: dict[str, Any], applier: StyleApplier,
+                  media: dict[str, bytes], pivots: PivotBuilder) -> None:
     ws = wb.create_sheet(sheet["name"])
     ws.sheet_state = sheet.get("state", "visible")
 
@@ -220,7 +220,7 @@ def _import_sheet(wb: Workbook, sheet: Dict[str, Any], applier: StyleApplier,
         ws.defined_names[data["name"]] = _defined_name(data)
 
 
-def _defined_name(data: Dict[str, Any]) -> DefinedName:
+def _defined_name(data: dict[str, Any]) -> DefinedName:
     return DefinedName(
         name=data["name"],
         attr_text=data["value"],
@@ -237,7 +237,7 @@ _CONTENT_TYPES = (
 )
 
 
-def _custom_property(data: Dict[str, Any]):
+def _custom_property(data: dict[str, Any]):
     from openpyxl.packaging import custom
 
     cls = getattr(custom, data.get("type", ""), None)
@@ -249,7 +249,7 @@ def _custom_property(data: Dict[str, Any]):
     return cls(name=data["name"], value=value)
 
 
-def _external_link(data: Dict[str, Any]) -> ExternalLink:
+def _external_link(data: dict[str, Any]) -> ExternalLink:
     link = ExternalLink.from_tree(fromstring(data["xml"]))
     link.file_link = Relationship(
         Id="rId1",
@@ -260,7 +260,7 @@ def _external_link(data: Dict[str, Any]) -> ExternalLink:
     return link
 
 
-def _vba_archive(parts: Dict[str, bytes]) -> zipfile.ZipFile:
+def _vba_archive(parts: dict[str, bytes]) -> zipfile.ZipFile:
     """Build an in-memory archive that openpyxl merges into the saved file."""
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
@@ -273,7 +273,7 @@ def _vba_archive(parts: Dict[str, bytes]) -> zipfile.ZipFile:
     return zipfile.ZipFile(buffer, "r")
 
 
-def build_workbook(model: Dict[str, Any]) -> Workbook:
+def build_workbook(model: dict[str, Any]) -> Workbook:
     """Create an openpyxl workbook from a model."""
     wb = Workbook()
     wb.remove(wb.active)
@@ -325,7 +325,7 @@ def build_workbook(model: Dict[str, Any]) -> Workbook:
     return wb
 
 
-def import_model(model: Dict[str, Any], output: Union[str, Path]) -> Path:
+def import_model(model: dict[str, Any], output: str | Path) -> Path:
     """Build a workbook from a model and save it to ``output``."""
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)

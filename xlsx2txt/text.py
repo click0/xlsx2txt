@@ -4,7 +4,7 @@ Used by ``xlsx2txt cat`` so that ``git diff`` can show changes inside
 Excel files directly (see "Git integration" in the README).
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from xlsx2txt.compare import resolve_style
 from xlsx2txt.drawings import chart_title
@@ -19,9 +19,9 @@ def _color(value: Any) -> str:
     return str(value)
 
 
-def describe_style(style: Dict[str, Any], default: Dict[str, Any]) -> str:
+def describe_style(style: dict[str, Any], default: dict[str, Any]) -> str:
     """Short human readable description of the parts that differ from the default."""
-    parts: List[str] = []
+    parts: list[str] = []
     font = style.get("font", {})
     if font != default.get("font"):
         bits = []
@@ -61,7 +61,7 @@ def describe_style(style: Dict[str, Any], default: Dict[str, Any]) -> str:
     return "; ".join(parts)
 
 
-def _value(record: Dict[str, Any]) -> str:
+def _value(record: dict[str, Any]) -> str:
     value_type = record.get("t")
     if value_type == "f":
         text = record.get("f") or f"<{record.get('fType', 'formula')}>"
@@ -79,9 +79,9 @@ def _value(record: Dict[str, Any]) -> str:
     return ""
 
 
-def render_text(model: Dict[str, Any], styles: bool = True) -> str:
+def render_text(model: dict[str, Any], styles: bool = True) -> str:
     """Render a model as stable, diff-friendly text."""
-    lines: List[str] = []
+    lines: list[str] = []
     style_table = model["styles"]
     default = resolve_style(style_table, 0)
     workbook = model["workbook"]

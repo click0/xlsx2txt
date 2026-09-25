@@ -12,7 +12,7 @@ Layout in the model::
 
 import re
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from openpyxl.pivot.cache import CacheDefinition
 from openpyxl.pivot.record import RecordList
@@ -33,22 +33,21 @@ for _prefix, _uri in _NAMESPACES.items():
 def pretty_xml(element) -> str:
     """Serialize an openpyxl tree as indented XML (one element per line)."""
     tree = ET.fromstring(tostring(element))
-    if hasattr(ET, "indent"):  # Python 3.9+
-        ET.indent(tree, space="  ")
+    ET.indent(tree, space="  ")
     return ET.tostring(tree, encoding="unicode") + "\n"
 
 
-def export_pivots(worksheets) -> Dict[str, Any]:
+def export_pivots(worksheets) -> dict[str, Any]:
     """Collect pivot tables of all sheets.
 
     Returns ``{"sheets": {title: [entry, ...]}, "files": {name: xml}}``.
     Caches shared by several pivot tables are stored once.
     """
-    files: Dict[str, str] = {}
-    sheets: Dict[str, List[Dict[str, str]]] = {}
+    files: dict[str, str] = {}
+    sheets: dict[str, list[dict[str, str]]] = {}
     # openpyxl creates a separate cache object per sheet even when the file
     # has one shared cache, so identical caches are matched by content.
-    cache_names: Dict[Tuple[str, Optional[str]], str] = {}
+    cache_names: dict[tuple[str, str | None], str] = {}
     table_count = 0
     for ws in worksheets:
         for pivot in getattr(ws, "_pivots", []):
@@ -74,9 +73,9 @@ def export_pivots(worksheets) -> Dict[str, Any]:
 class PivotBuilder:
     """Recreates pivot tables on import, sharing caches between tables."""
 
-    def __init__(self, files: Dict[str, str]):
+    def __init__(self, files: dict[str, str]):
         self._files = files
-        self._caches: Dict[str, CacheDefinition] = {}
+        self._caches: dict[str, CacheDefinition] = {}
 
     def _read(self, name: str) -> str:
         if name not in self._files:
@@ -92,14 +91,14 @@ class PivotBuilder:
             self._caches[name] = cache
         return self._caches[name]
 
-    def table(self, entry: Dict[str, str]) -> TableDefinition:
+    def table(self, entry: dict[str, str]) -> TableDefinition:
         pivot = TableDefinition.from_tree(fromstring(self._read(entry["table"])))
         if entry.get("cache"):
             pivot.cache = self.cache(entry["cache"])
         return pivot
 
 
-def describe(xml: str) -> Optional[str]:
+def describe(xml: str) -> str | None:
     """'name at D1:E4' for summaries."""
     name = re.search(r'<pivotTableDefinition[^>]*\bname="([^"]*)"', xml)
     ref = re.search(r'<location[^>]*\bref="([^"]*)"', xml)

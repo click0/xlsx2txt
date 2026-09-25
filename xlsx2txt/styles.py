@@ -1,7 +1,7 @@
 """Conversion of openpyxl style objects to/from JSON-friendly dicts."""
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from openpyxl.styles import Alignment, Border, Font, PatternFill, GradientFill, Protection, Side
 from openpyxl.styles.colors import Color
@@ -15,7 +15,7 @@ from openpyxl.styles.fills import Stop
 _DEFAULT_RGB = "00000000"
 
 
-def color_to_json(color: Optional[Color]) -> Any:
+def color_to_json(color: Color | None) -> Any:
     """Serialize a color.
 
     Plain RGB colors become a string ("FFFF0000"); theme, indexed and
@@ -43,7 +43,7 @@ def color_to_json(color: Optional[Color]) -> Any:
     return result
 
 
-def color_from_json(data: Any) -> Optional[Color]:
+def color_from_json(data: Any) -> Color | None:
     """Deserialize a color produced by :func:`color_to_json`."""
     if data is None:
         return None
@@ -52,7 +52,7 @@ def color_from_json(data: Any) -> Optional[Color]:
     return Color(**data)
 
 
-def _is_default_color(color: Optional[Color]) -> bool:
+def _is_default_color(color: Color | None) -> bool:
     return (
         color is None
         or (color.type == "rgb" and color.rgb == _DEFAULT_RGB and not color.tint)
@@ -69,7 +69,7 @@ _FONT_ATTRS = [
 ]
 
 
-def font_to_json(font: Font) -> Dict[str, Any]:
+def font_to_json(font: Font) -> dict[str, Any]:
     result = {}
     for attr in _FONT_ATTRS:
         value = getattr(font, attr)
@@ -81,7 +81,7 @@ def font_to_json(font: Font) -> Dict[str, Any]:
     return result
 
 
-def font_from_json(data: Dict[str, Any]) -> Font:
+def font_from_json(data: dict[str, Any]) -> Font:
     kwargs = dict(data)
     if "color" in kwargs:
         kwargs["color"] = color_from_json(kwargs["color"])
@@ -93,7 +93,7 @@ def _unwrap(obj):
     return getattr(obj, "_StyleProxy__target", obj)
 
 
-def fill_to_json(fill) -> Dict[str, Any]:
+def fill_to_json(fill) -> dict[str, Any]:
     fill = _unwrap(fill)
     if isinstance(fill, GradientFill):
         result = {"gradient": fill.type or "linear"}
@@ -114,7 +114,7 @@ def fill_to_json(fill) -> Dict[str, Any]:
     return result
 
 
-def fill_from_json(data: Dict[str, Any]):
+def fill_from_json(data: dict[str, Any]):
     if "gradient" in data:
         stops = [
             Stop(color=color_from_json(s["color"]), position=s["position"])
@@ -140,7 +140,7 @@ def fill_from_json(data: Dict[str, Any]):
 _BORDER_SIDES = ["left", "right", "top", "bottom", "diagonal", "vertical", "horizontal"]
 
 
-def border_to_json(border: Border) -> Dict[str, Any]:
+def border_to_json(border: Border) -> dict[str, Any]:
     result = {}
     for name in _BORDER_SIDES:
         side = getattr(border, name)
@@ -159,7 +159,7 @@ def border_to_json(border: Border) -> Dict[str, Any]:
     return result
 
 
-def border_from_json(data: Dict[str, Any]) -> Border:
+def border_from_json(data: dict[str, Any]) -> Border:
     kwargs = {}
     for name in _BORDER_SIDES:
         if name in data:
@@ -177,7 +177,7 @@ _ALIGNMENT_ATTRS = [
 ]
 
 
-def alignment_to_json(alignment: Alignment) -> Dict[str, Any]:
+def alignment_to_json(alignment: Alignment) -> dict[str, Any]:
     result = {}
     for attr in _ALIGNMENT_ATTRS:
         value = getattr(alignment, attr)
@@ -187,15 +187,15 @@ def alignment_to_json(alignment: Alignment) -> Dict[str, Any]:
     return result
 
 
-def alignment_from_json(data: Dict[str, Any]) -> Alignment:
+def alignment_from_json(data: dict[str, Any]) -> Alignment:
     return Alignment(**data)
 
 
-def protection_to_json(protection: Protection) -> Dict[str, Any]:
+def protection_to_json(protection: Protection) -> dict[str, Any]:
     return {"locked": bool(protection.locked), "hidden": bool(protection.hidden)}
 
 
-def protection_from_json(data: Dict[str, Any]) -> Protection:
+def protection_from_json(data: dict[str, Any]) -> Protection:
     return Protection(locked=data.get("locked", True), hidden=data.get("hidden", False))
 
 
@@ -203,7 +203,7 @@ def protection_from_json(data: Dict[str, Any]) -> Protection:
 # Differential styles (used by conditional formatting)
 # ---------------------------------------------------------------------------
 
-def dxf_to_json(dxf: Optional[DifferentialStyle]) -> Optional[Dict[str, Any]]:
+def dxf_to_json(dxf: DifferentialStyle | None) -> dict[str, Any] | None:
     if dxf is None:
         return None
     result = {}
@@ -222,7 +222,7 @@ def dxf_to_json(dxf: Optional[DifferentialStyle]) -> Optional[Dict[str, Any]]:
     return result
 
 
-def dxf_from_json(data: Optional[Dict[str, Any]]) -> Optional[DifferentialStyle]:
+def dxf_from_json(data: dict[str, Any] | None) -> DifferentialStyle | None:
     if data is None:
         return None
     from openpyxl.styles.numbers import NumberFormat
@@ -254,8 +254,8 @@ class _Pool:
     """Ordered, de-duplicated list of JSON-serializable items."""
 
     def __init__(self):
-        self.items: List[Any] = []
-        self._index: Dict[str, int] = {}
+        self.items: list[Any] = []
+        self._index: dict[str, int] = {}
 
     def add(self, item: Any) -> int:
         key = json.dumps(item, sort_keys=True, ensure_ascii=False)
@@ -288,7 +288,7 @@ class StyleTable:
         }
         return self._styles.add(style)
 
-    def to_json(self) -> Dict[str, List[Any]]:
+    def to_json(self) -> dict[str, list[Any]]:
         result = {name: pool.items for name, pool in self._pools.items()}
         result["cellStyles"] = self._styles.items
         return result
@@ -297,10 +297,10 @@ class StyleTable:
 class StyleApplier:
     """Applies exported styles to cells while importing."""
 
-    def __init__(self, styles: Dict[str, List[Any]]):
+    def __init__(self, styles: dict[str, list[Any]]):
         self._styles = styles
-        self._objects: Dict[int, tuple] = {}
-        self._arrays: Dict[int, Any] = {}
+        self._objects: dict[int, tuple] = {}
+        self._arrays: dict[int, Any] = {}
 
     def objects(self, index: int) -> tuple:
         if index not in self._objects:
@@ -341,9 +341,9 @@ _INLINE_FONT_ATTRS = [
 ]
 
 
-def rich_text_to_json(value) -> List[Any]:
+def rich_text_to_json(value) -> list[Any]:
     """Plain runs become strings, formatted runs {"text": ..., "font": {...}}."""
-    runs: List[Any] = []
+    runs: list[Any] = []
     for run in value:
         if isinstance(run, str):
             runs.append(run)
@@ -360,7 +360,7 @@ def rich_text_to_json(value) -> List[Any]:
     return runs
 
 
-def rich_text_from_json(runs: List[Any]):
+def rich_text_from_json(runs: list[Any]):
     from openpyxl.cell.rich_text import CellRichText, TextBlock
     from openpyxl.cell.text import InlineFont
 
