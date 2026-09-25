@@ -21,8 +21,10 @@ from openpyxl.worksheet.properties import PageSetupProperties
 from openpyxl.worksheet.table import Table
 from openpyxl.xml.functions import fromstring
 
+from xlsx2txt.drawings import build_image, chart_from_json
 from xlsx2txt.styles import (
     StyleApplier,
+    rich_text_from_json,
     border_from_json,
     color_from_json,
     dxf_from_json,
@@ -48,6 +50,8 @@ def decode_value(value: Any, value_type: str) -> Any:
         if ":" in value:
             return datetime.time.fromisoformat(value)
         return datetime.date.fromisoformat(value)
+    if value_type == "rs":
+        return rich_text_from_json(value)
     if value_type == "td":
         return datetime.timedelta(seconds=value)
     return value
@@ -129,7 +133,8 @@ def _import_dimensions(ws, dims: Dict[str, Any], applier: StyleApplier) -> None:
             applier.apply(dim, data["s"])
 
 
-def _import_sheet(wb: Workbook, sheet: Dict[str, Any], applier: StyleApplier) -> None:
+def _import_sheet(wb: Workbook, sheet: Dict[str, Any], applier: StyleApplier,
+                  media: Dict[str, bytes]) -> None:
     ws = wb.create_sheet(sheet["name"])
     ws.sheet_state = sheet.get("state", "visible")
 
@@ -192,6 +197,14 @@ def _import_sheet(wb: Workbook, sheet: Dict[str, Any], applier: StyleApplier) ->
             rule = Rule(dxf=dxf, **data, **kwargs)
             ws.conditional_formatting.add(block["range"], rule)
 
+    for image in sheet.get("images", []):
+        if image["file"] not in media:
+            raise ValueError(f"Sheet '{sheet['name']}': missing image file media/{image['file']}")
+        ws.add_image(build_image(media[image["file"]], image["anchor"]))
+
+    for chart in sheet.get("charts", []):
+        ws.add_chart(chart_from_json(chart))
+
     for xml in sheet.get("tables", []):
         ws.add_table(Table.from_tree(fromstring(xml)))
 
@@ -242,7 +255,7 @@ def build_workbook(model: Dict[str, Any]) -> Workbook:
     applier = StyleApplier(styles)
 
     for sheet in model["sheets"]:
-        _import_sheet(wb, sheet, applier)
+        _import_sheet(wb, sheet, applier, model.get("media") or {})
 
     if wb.worksheets:
         active = workbook.get("activeSheet", 0)

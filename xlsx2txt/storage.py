@@ -8,18 +8,20 @@ Layout::
     data/sheets/<Sheet>.json
     data/styles/{fonts,fills,borders,alignments,protections,cellStyles}.json
     data/theme/theme1.xml          (optional)
+    data/media/image_<hash>.<ext>  (optional, images)
     vba/xl/vbaProject.bin          (optional, .xlsm only)
+    vba/modules/*.bas|cls|frm      (optional, VBA source code, read-only)
     _verify/checksums.json
 """
 
 import hashlib
 import json
-import re
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
 from xlsx2txt.exporter import FORMAT_NAME, FORMAT_VERSION
+from xlsx2txt.names import safe_file_name
 from xlsx2txt.styles import STYLE_PARTS
 
 MANIFEST = "manifest.json"
@@ -28,7 +30,9 @@ SHEETS_DIR = "data/sheets"
 SHEETS_INDEX = "data/sheets/_index.json"
 STYLES_DIR = "data/styles"
 THEME = "data/theme/theme1.xml"
+MEDIA_DIR = "data/media"
 VBA_DIR = "vba"
+VBA_SOURCES_DIR = "vba/modules"
 CHECKSUMS = "_verify/checksums.json"
 
 MANAGED = [MANIFEST, "data", VBA_DIR, "_verify"]
@@ -84,18 +88,12 @@ def dumps(obj: Any) -> str:
 # File names
 # ---------------------------------------------------------------------------
 
-_UNSAFE = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
-_RESERVED = {"con", "prn", "aux", "nul"} | {f"com{i}" for i in range(1, 10)} | {f"lpt{i}" for i in range(1, 10)}
-
-
 def sheet_file_names(names: List[str]) -> List[str]:
     """Build unique, filesystem-safe file names for sheets."""
     used = {"_index"}
     result = []
     for name in names:
-        base = _UNSAFE.sub("_", name).strip(" .") or "sheet"
-        if base.lower() in _RESERVED:
-            base = f"_{base}"
+        base = safe_file_name(name)
         candidate = base
         counter = 2
         while candidate.lower() in used:
@@ -155,8 +153,14 @@ def write_model(model: Dict[str, Any], out_dir: Union[str, Path], force: bool = 
     if model.get("theme"):
         files[THEME] = model["theme"].encode("utf-8")
 
+    for name, content in sorted((model.get("media") or {}).items()):
+        files[f"{MEDIA_DIR}/{name}"] = content
+
     for name, content in sorted((model.get("vba") or {}).items()):
         files[f"{VBA_DIR}/{name}"] = content
+
+    for name, code in sorted((model.get("vbaSources") or {}).items()):
+        files[f"{VBA_SOURCES_DIR}/{name}"] = code.encode("utf-8")
 
     checksums = {rel: hashlib.sha256(content).hexdigest() for rel, content in sorted(files.items())}
     put_json(CHECKSUMS, {"algorithm": "sha256", "files": checksums})
@@ -216,11 +220,24 @@ def read_model(in_dir: Union[str, Path]) -> Dict[str, Any]:
     theme = theme_path.read_text(encoding="utf-8") if theme_path.exists() else None
 
     vba = {}
+    vba_sources = {}
     vba_dir = in_dir / VBA_DIR
     if vba_dir.is_dir():
         for path in sorted(vba_dir.rglob("*")):
-            if path.is_file():
+            if not path.is_file():
+                continue
+            rel = path.relative_to(in_dir).as_posix()
+            if rel.startswith(VBA_SOURCES_DIR + "/"):
+                vba_sources[rel[len(VBA_SOURCES_DIR) + 1:]] = path.read_text(encoding="utf-8")
+            else:
                 vba[path.relative_to(vba_dir).as_posix()] = path.read_bytes()
+
+    media = {}
+    media_dir = in_dir / MEDIA_DIR
+    if media_dir.is_dir():
+        for path in sorted(media_dir.iterdir()):
+            if path.is_file():
+                media[path.name] = path.read_bytes()
 
     return {
         "manifest": manifest,
@@ -229,6 +246,8 @@ def read_model(in_dir: Union[str, Path]) -> Dict[str, Any]:
         "sheets": sheets,
         "theme": theme,
         "vba": vba,
+        "vbaSources": vba_sources,
+        "media": media,
     }
 
 

@@ -164,7 +164,11 @@ def info(input_path):
             click.echo(f"{key + ':':<9} {props[key]}")
     click.echo(f"Styles:   {len(model['styles'].get('cellStyles', []))}")
     click.echo(f"Names:    {len(workbook.get('definedNames', []))}")
-    click.echo(f"VBA:      {'yes' if model.get('vba') else 'no'}")
+    vba = "no"
+    if model.get("vba"):
+        modules = len(model.get("vbaSources") or {})
+        vba = f"yes ({modules} module(s) in vba/modules)" if modules else "yes"
+    click.echo(f"VBA:      {vba}")
     click.echo(f"Sheets:   {len(model['sheets'])}")
     for sheet in model["sheets"]:
         cells = sheet.get("cells", {})
@@ -173,7 +177,8 @@ def info(input_path):
         click.echo(
             f"  - {sheet['name']}{state}: range {sheet.get('usedRange')}, "
             f"{len(cells)} cell(s), {formulas} formula(s), "
-            f"{len(sheet.get('mergedCells', []))} merged range(s)"
+            f"{len(sheet.get('mergedCells', []))} merged range(s), "
+            f"{len(sheet.get('images', []))} image(s), {len(sheet.get('charts', []))} chart(s)"
         )
     for warning in manifest.get("warnings", []):
         click.echo(f"Warning: {warning}")
