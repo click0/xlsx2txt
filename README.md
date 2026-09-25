@@ -73,6 +73,11 @@ xlsx2txt diff report.xlsx report_new.xlsx
 xlsx2txt info report.xlsx
 ```
 
+## Examples
+
+The [`examples/`](examples/) directory contains small workbooks for every group of
+features together with their exports, e.g. [`examples/02-styles/`](examples/02-styles/).
+
 ## Commands
 
 | Command | Description |

@@ -1,0 +1,16 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "data/sheets/Report.json": "98580f0311742f84e47d8dba9be71c0b2e32edd1e03a63ddf4dc39ea037a8aeb",
+    "data/sheets/_index.json": "bc4f169411b2bb58892fb704518d513a7a3278e5393f9630ed16e5de54832a2b",
+    "data/styles/alignments.json": "501de836b88be0a82b9af264bee8fa768a66abb5ac670b802bf7f696171b0e96",
+    "data/styles/borders.json": "501de836b88be0a82b9af264bee8fa768a66abb5ac670b802bf7f696171b0e96",
+    "data/styles/cellStyles.json": "ef2f88619c45c528b16d48134787456cd96a13d55a41ccc3317c74ef9f3b76c2",
+    "data/styles/fills.json": "75f473456d8c4974a3423cf9b27efa9a66e757b05fd61113de5a6bcfa6056604",
+    "data/styles/fonts.json": "b99a2c50680d9bf1255c9b90173e8578d6e550477f310b8abc138f6f26a6d1bb",
+    "data/styles/protections.json": "1d78a8aa6f2b2591ac74758dce7b3d1147f845d6bd233ac3f95dcd0802d19291",
+    "data/theme/theme1.xml": "d15e8ebf78ef7b9720839d7ae8fdc81a7df5bc24706d8e137df61a5683c358d9",
+    "data/workbook.json": "24498af131680c22095b5ad824b2abaa1053f7dec1d546d974c7d5bff581a0f0",
+    "manifest.json": "fdccb4b825f0d1155d05928db300f1cd841770c45c52167abb63e27d417875bb"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "Report",
+  "tabColor": "FFC00000",
+  "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
+  "usedRange": "A1:B2",
+  "dimensions": {"columns": {"A": {"width": 60.0}}, "rows": {}},
+  "mergedCells": [],
+  "print": {
+    "titleRows": "$1:$1",
+    "pageSetup": {"orientation": "landscape", "fitToWidth": 1},
+    "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5},
+    "fitToPage": true
+  },
+  "protection": {"sheet": true, "objects": false, "scenarios": false, "formatCells": true, "formatRows": true, "formatColumns": true, "insertColumns": true, "insertRows": true, "insertHyperlinks": true, "deleteColumns": true, "deleteRows": true, "selectLockedCells": false, "selectUnlockedCells": false, "sort": true, "autoFilter": true, "pivotTables": true},
+  "cells": {
+    "A1": {"v": "Budget from another file", "t": "s"},
+    "B1": {"t": "f", "f": "=[1]Budget!B2"},
+    "A2": {"v": "Protected sheet, print settings: landscape, fit to width", "t": "s"}
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "name": "Styles",
+  "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
+  "usedRange": "A1:E8",
+  "dimensions": {
+    "columns": {
+      "A": {"width": 14.0},
+      "B": {"width": 16.0},
+      "C": {"width": 16.0},
+      "D": {"width": 10.0},
+      "E": {"width": 12.0}
+    },
+    "rows": {"1": {"height": 28.0}}
+  },
+  "mergedCells": ["A1:E1"],
+  "print": {
+    "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
+  },
+  "dataValidations": [
+    {"sqref": "E3:E6", "type": "list", "formula1": "\"open,closed,archived\"", "allow_blank": false, "showDropDown": false, "showErrorMessage": true, "showInputMessage": false, "error": "Choose a status from the list"}
+  ],
+  "conditionalFormatting": [
+    {
+      "range": "D3:D6",
+      "rules": [
+        {
+          "type": "cellIs",
+          "priority": 1,
+          "operator": "lessThan",
+          "formula": ["0"],
+          "dxf": {"font": {"color": "FF9C0006"}, "fill": {"patternType": "solid", "bgColor": "FFFFC7CE"}}
+        }
+      ]
+    },
+    {
+      "range": "B3:B6",
+      "rules": [
+        {"type": "dataBar", "priority": 2, "dataBar": "<dataBar><cfvo type=\"min\" /><cfvo type=\"max\" /><color rgb=\"FF638EC6\" /></dataBar>"}
+      ]
+    },
+    {
+      "range": "C3:C6",
+      "rules": [
+        {"type": "colorScale", "priority": 3, "colorScale": "<colorScale><cfvo type=\"min\" /><cfvo type=\"max\" /><color rgb=\"FF63BE7B\" /><color rgb=\"FFF8696B\" /></colorScale>"}
+      ]
+    }
+  ],
+  "cells": {
+    "A1": {"v": "Quarterly report", "t": "s", "s": 1},
+    "A2": {"v": "Quarter", "t": "s", "s": 2},
+    "B2": {"v": "Revenue", "t": "s", "s": 3},
+    "C2": {"v": "Costs", "t": "s", "s": 3},
+    "D2": {"v": "Margin", "t": "s", "s": 4},
+    "E2": {"v": "Status", "t": "s", "s": 2},
+    "A3": {"v": "Q1", "t": "s", "s": 5},
+    "B3": {"v": 125000, "t": "n", "s": 6},
+    "C3": {"v": 98000, "t": "n", "s": 6},
+    "D3": {"v": 0.216, "t": "n", "s": 7},
+    "E3": {"v": "open", "t": "s", "s": 5},
+    "A4": {"v": "Q2", "t": "s", "s": 5},
+    "B4": {"v": 142000, "t": "n", "s": 6},
+    "C4": {"v": 101000, "t": "n", "s": 6},
+    "D4": {"v": 0.2887323943661972, "t": "n", "s": 7},
+    "E4": {"v": "open", "t": "s", "s": 5},
+    "A5": {"v": "Q3", "t": "s", "s": 5},
+    "B5": {"v": 98000, "t": "n", "s": 6},
+    "C5": {"v": 105000, "t": "n", "s": 6},
+    "D5": {"v": -0.07142857142857142, "t": "n", "s": 7},
+    "E5": {"v": "open", "t": "s", "s": 5},
+    "A6": {"v": "Q4", "t": "s", "s": 5},
+    "B6": {"v": 171000, "t": "n", "s": 6},
+    "C6": {"v": 120000, "t": "n", "s": 6},
+    "D6": {"v": 0.2982456140350877, "t": "n", "s": 7},
+    "E6": {"v": "open", "t": "s", "s": 5},
+    "A8": {"v": "Wrapped text that does not fit into one line of the cell", "t": "s", "s": 8},
+    "B8": {"v": "Rotated", "t": "s", "s": 9},
+    "C8": {"v": "Italic strike", "t": "s", "s": 10},
+    "D8": {"v": "Theme color", "t": "s", "s": 11}
+  }
+}

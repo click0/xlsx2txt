@@ -73,6 +73,11 @@ xlsx2txt diff report.xlsx report_new.xlsx
 xlsx2txt info report.xlsx
 ```
 
+## Приклади
+
+У каталозі [`examples/`](examples/) лежать невеликі книги для кожної групи
+можливостей разом з їхніми експортами, наприклад [`examples/02-styles/`](examples/02-styles/).
+
 ## Команди
 
 | Команда | Опис |

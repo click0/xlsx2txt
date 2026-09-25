@@ -1,0 +1,14 @@
+[
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "General"},
+  {"font": 1, "fill": 0, "border": 0, "alignment": 1, "protection": 0, "numFmt": "General"},
+  {"font": 2, "fill": 1, "border": 1, "alignment": 2, "protection": 0, "numFmt": "General"},
+  {"font": 2, "fill": 1, "border": 1, "alignment": 2, "protection": 0, "numFmt": "#,##0 \"UAH\""},
+  {"font": 2, "fill": 1, "border": 1, "alignment": 2, "protection": 0, "numFmt": "0.0%"},
+  {"font": 0, "fill": 0, "border": 1, "alignment": 0, "protection": 0, "numFmt": "General"},
+  {"font": 0, "fill": 0, "border": 1, "alignment": 0, "protection": 0, "numFmt": "#,##0 \"UAH\""},
+  {"font": 0, "fill": 0, "border": 1, "alignment": 0, "protection": 0, "numFmt": "0.0%"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 3, "protection": 0, "numFmt": "General"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 4, "protection": 0, "numFmt": "General"},
+  {"font": 3, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "General"},
+  {"font": 0, "fill": 2, "border": 0, "alignment": 0, "protection": 0, "numFmt": "General"}
+]

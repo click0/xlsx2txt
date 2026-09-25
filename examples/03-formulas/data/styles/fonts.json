@@ -1,0 +1,5 @@
+[
+  {"name": "Calibri", "size": 11.0, "color": {"theme": 1}, "family": 2.0, "scheme": "minor"},
+  {"bold": true, "color": "FFFFFFFF"},
+  {"name": "Calibri", "size": 12.0, "color": {"theme": 10}, "family": 2.0, "scheme": "minor"}
+]

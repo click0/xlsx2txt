@@ -1,0 +1,10 @@
+{
+  "format": "xlsx2txt",
+  "formatVersion": 1,
+  "generator": "xlsx2txt 0.3.0",
+  "source": {"name": "02-styles.xlsx", "type": "xlsx"},
+  "sheetCount": 1,
+  "cellCount": 30,
+  "hasVba": false,
+  "warnings": []
+}

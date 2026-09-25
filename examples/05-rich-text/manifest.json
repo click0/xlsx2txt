@@ -1,0 +1,10 @@
+{
+  "format": "xlsx2txt",
+  "formatVersion": 1,
+  "generator": "xlsx2txt 0.3.0",
+  "source": {"name": "05-rich-text.xlsx", "type": "xlsx"},
+  "sheetCount": 1,
+  "cellCount": 3,
+  "hasVba": false,
+  "warnings": []
+}
