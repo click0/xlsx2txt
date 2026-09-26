@@ -6,6 +6,8 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-26
+
 ### Added
 - Shapes: text boxes, rectangles and other preset shapes, connector arrows
   and groups are exported with the sheet (`shapes`: name, text and the
@@ -101,7 +103,8 @@ First working version.
   checksums in `_verify/`.
 - Releases from the GitHub web interface.
 
-[Unreleased]: https://github.com/click0/xlsx2txt/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/click0/xlsx2txt/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/click0/xlsx2txt/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/click0/xlsx2txt/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/click0/xlsx2txt/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/click0/xlsx2txt/compare/v0.1.0...v0.2.0
