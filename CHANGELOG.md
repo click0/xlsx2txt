@@ -12,9 +12,17 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
   `data/metadata.xml`) and the `cm` mark of the cell are exported and
   restored. Before, Excel showed them as legacy `{=...}` array formulas after
   a round-trip. `cat` shows them as "spills over".
-- Error checks switched off on a sheet (`ignoredErrors`, e.g. "number stored
-  as text") are kept. They were lost before without a warning.
-- Example `09-extensions` shows both.
+- Sheet and workbook elements openpyxl has no model for are kept as XML
+  (`xmlElements`) and put back in schema order: switched-off error checks
+  (`ignoredErrors`), ranges editable with their own password
+  (`protectedRanges`), custom views, sort state, cell watches, "open as
+  read-only" recommended (`fileSharing`) and more. They were lost before
+  without a warning. The workbook's own Excel extensions are kept too.
+- Warnings for a sheet's background picture and pictures in its header or
+  footer, which were lost silently.
+- Examples: `09-extensions` shows a dynamic array and a switched-off error
+  check, `06-workbook-features` a password-protected range, a custom view and
+  "open as read-only" recommended.
 
 ## [0.6.0] - 2026-09-26
 

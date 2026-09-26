@@ -358,11 +358,13 @@ def import_model(model: dict[str, Any], output: str | Path) -> Path:
         cf_ids=cf_ids,
         sheet_threads={sheet["name"]: sheet.get("threadedComments", []) for sheet in model["sheets"]},
         persons=model["workbook"].get("persons") or [],
-        ignored_errors={s["name"]: s["ignoredErrors"] for s in model["sheets"] if s.get("ignoredErrors")},
+        sheet_elements={s["name"]: s.get("xmlElements", []) for s in model["sheets"]},
         cell_metadata={
             s["name"]: {coord: r["cm"] for coord, r in s.get("cells", {}).items() if "cm" in r}
             for s in model["sheets"]
         },
         metadata=model.get("metadata"),
+        workbook_elements=model["workbook"].get("xmlElements") or [],
+        workbook_extensions=model["workbook"].get("extensions") or [],
     )
     return output

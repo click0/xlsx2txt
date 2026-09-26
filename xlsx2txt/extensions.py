@@ -9,18 +9,17 @@ Conditional formatting rules that have extended options point at them with
 an id (``<x14:id>`` in the rule's own ``<extLst>``); openpyxl drops that
 link too, so it is exported with the rule as ``extId`` and restored.
 
-Two more pieces of worksheet XML openpyxl drops are kept here as well:
-``<ignoredErrors>`` (error checks the user switched off, the green
-triangles) and the ``cm`` attribute of cells, which points dynamic array
-formulas (FILTER, SORT, UNIQUE...) at ``xl/metadata.xml``; without it Excel
-shows them as legacy ``{=...}`` array formulas.
+The ``cm`` attribute of cells, which points dynamic array formulas (FILTER,
+SORT, UNIQUE...) at ``xl/metadata.xml``, is kept here as well; without it
+Excel shows them as legacy ``{=...}`` array formulas. Other worksheet
+elements openpyxl drops are handled in :mod:`xlsx2txt.elements`.
 """
 
 import html
 import re
 from typing import Any
 
-from xlsx2txt.xmlfrag import insert_child, self_contained, split_children
+from xlsx2txt.xmlfrag import self_contained, split_children
 
 X14_NS = "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"
 CF_EXT_URI = "{B025F937-C7B1-47D3-B67F-A62EFF666E3E}"
@@ -33,6 +32,13 @@ KINDS = {
     "{3A4CF648-6AED-40f4-86FF-DC5316D8AED3}": "slicers",
     "{7E03D99C-DC04-49d9-9315-930204A7B6E9}": "timelines",
     "{F7C9EE02-42E1-4005-9D12-6889AFFD525C}": "Office add-ins",
+    # Workbook extensions.
+    "{140A7094-0E35-4892-8432-C4D2E57EDEB5}": "workbook properties (Excel 2013+)",
+    "{B58B0392-4F1F-4190-BB64-5DF3571DCE5F}": "calculation features",
+    "{D14903EA-33C4-47F7-8F05-3474C54BE107}": "workbook compatibility version",
+    "{BBE1A952-AA13-448e-AADC-164F8A28A991}": "slicers",
+    "{46BE6895-7355-4a93-B00E-2C351335B9C9}": "slicers",
+    "{D0CA8CA8-9F24-4464-BF8E-62219DCF47F9}": "timelines",
 }
 # A reference to a relationship of the sheet (slicers, timelines, add-ins).
 _REL_REF = re.compile(r"\sr:\w+=")
@@ -108,12 +114,13 @@ def _link_rules(sheet_xml: str, ids: dict[str, str]) -> str:
 
 
 def write_sheet(sheet_xml: str, extensions: list[dict[str, Any]], ids: dict[str, str]) -> str:
-    """Add extensions and conditional formatting links to a sheet saved by openpyxl."""
+    """Add extensions and conditional formatting links to a sheet (or the
+    workbook) saved by openpyxl."""
     if ids:
         sheet_xml = _link_rules(sheet_xml, ids)
     if extensions:
         fragments = "".join(ext["xml"] for ext in extensions)
-        existing = re.search(r"</(?:\w+:)?extLst>\s*</(?:\w+:)?worksheet>\s*$", sheet_xml)
+        existing = re.search(r"</(?:\w+:)?extLst>\s*</[\w:]+>\s*$", sheet_xml)
         if existing:
             sheet_xml = sheet_xml[:existing.start()] + fragments + sheet_xml[existing.start():]
         else:
@@ -123,29 +130,14 @@ def write_sheet(sheet_xml: str, extensions: list[dict[str, Any]], ids: dict[str,
 
 
 # ---------------------------------------------------------------------------
-# <ignoredErrors> and cell metadata
+# Cell metadata (dynamic arrays)
 # ---------------------------------------------------------------------------
 
 METADATA_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/sheetMetadata"
 METADATA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheetMetadata+xml"
-# Elements that follow <ignoredErrors> in a worksheet (ECMA-376, CT_Worksheet).
-_AFTER_IGNORED = {"smartTags", "drawing", "legacyDrawing", "legacyDrawingHF", "drawingHF", "picture",
-                  "oleObjects", "controls", "webPublishItems", "tableParts", "extLst"}
 _CELL_TAG = re.compile(r"<(?:\w+:)?c\b([^>]*?)/?>")
 _REF = re.compile(r"\br=\"([A-Z]+[0-9]+)\"")
 _CM = re.compile(r"\bcm=\"(\d+)\"")
-
-
-def read_ignored_errors(sheet_xml: str) -> str | None:
-    root, children = split_children(sheet_xml)
-    for child in children:
-        if _local(child) == "ignoredErrors":
-            return self_contained(child, root)
-    return None
-
-
-def write_ignored_errors(sheet_xml: str, fragment: str) -> str:
-    return insert_child(sheet_xml, fragment, _AFTER_IGNORED)
 
 
 def read_cell_metadata(sheet_xml: str) -> dict[str, int]:

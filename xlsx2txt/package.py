@@ -22,7 +22,7 @@ from pathlib import Path
 from openpyxl.packaging.relationship import get_dependents, get_rels_path
 from openpyxl.reader.workbook import WorkbookParser
 
-from xlsx2txt import extensions, threads
+from xlsx2txt import elements, extensions, threads
 from xlsx2txt.xmlfrag import insert_child
 from xlsx2txt.shapes import (
     EMPTY_DRAWING,
@@ -247,23 +247,34 @@ def _add_extensions(parts, sheet_paths, sheet_extensions: dict[str, list[dict]],
         parts[sheet_path] = extensions.write_sheet(xml, exts, ids).encode("utf-8")
 
 
-def _add_sheet_xml(parts, sheet_paths, ignored_errors: dict[str, str],
+def _add_sheet_xml(parts, sheet_paths, sheet_elements: dict[str, list[str]],
                    cell_metadata: dict[str, dict[str, int]], metadata: str | None) -> None:
-    for sheet_name in sorted(set(ignored_errors) | set(cell_metadata)):
+    for sheet_name in sorted(set(sheet_elements) | set(cell_metadata)):
+        if not sheet_elements.get(sheet_name) and not cell_metadata.get(sheet_name):
+            continue
         sheet_path = sheet_paths.get(sheet_name)
         if sheet_path is None:
-            raise ValueError(f"no sheet named {sheet_name!r} for ignored errors or cell metadata")
+            raise ValueError(f"no sheet named {sheet_name!r} for sheet elements or cell metadata")
         xml = parts[sheet_path].decode("utf-8")
         if cell_metadata.get(sheet_name):
             xml = extensions.write_cell_metadata(xml, cell_metadata[sheet_name])
-        if ignored_errors.get(sheet_name):
-            xml = extensions.write_ignored_errors(xml, ignored_errors[sheet_name])
+        if sheet_elements.get(sheet_name):
+            xml = elements.write(xml, sheet_elements[sheet_name], elements.SHEET_ORDER)
         parts[sheet_path] = xml.encode("utf-8")
     if metadata:
         part = "xl/metadata.xml"
         parts[part] = metadata.encode("utf-8")
         _add_sheet_relationship(parts, "xl/workbook.xml", extensions.METADATA_REL, part)
         _add_override(parts, part, extensions.METADATA_TYPE)
+
+
+def _add_workbook_xml(parts, workbook_elements: list[str], workbook_extensions: list[dict]) -> None:
+    if not workbook_elements and not workbook_extensions:
+        return
+    xml = parts["xl/workbook.xml"].decode("utf-8")
+    xml = elements.write(xml, workbook_elements, elements.WORKBOOK_ORDER)
+    xml = extensions.write_sheet(xml, workbook_extensions, {})
+    parts["xl/workbook.xml"] = xml.encode("utf-8")
 
 
 def _add_threads(parts, sheet_paths, sheet_threads: dict[str, list[dict]], persons: list[dict]) -> None:
@@ -290,21 +301,26 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
                   cf_ids: dict[str, dict[str, str]] | None = None,
                   sheet_threads: dict[str, list[dict]] | None = None,
                   persons: list[dict] | None = None,
-                  ignored_errors: dict[str, str] | None = None,
+                  sheet_elements: dict[str, list[str]] | None = None,
                   cell_metadata: dict[str, dict[str, int]] | None = None,
-                  metadata: str | None = None) -> None:
+                  metadata: str | None = None,
+                  workbook_elements: list[str] | None = None,
+                  workbook_extensions: list[dict] | None = None) -> None:
     """Add what openpyxl does not write to a file it saved (in place).
 
     ``printer_settings``: ``{sheet name: bytes}``; ``shapes``: ``{sheet name:
     [shape, ...]}`` as exported (see :mod:`xlsx2txt.shapes`); ``media``: the
     pictures shapes refer to; ``sheet_extensions`` / ``cf_ids``: see
     :mod:`xlsx2txt.extensions`; ``sheet_threads`` / ``persons``: see
-    :mod:`xlsx2txt.threads`; ``ignored_errors`` (``{sheet name: XML}``),
-    ``cell_metadata`` (``{sheet name: {cell: cm}}``) and ``metadata`` (the
-    ``xl/metadata.xml`` part): see :mod:`xlsx2txt.extensions`.
+    :mod:`xlsx2txt.threads`; ``cell_metadata`` (``{sheet name: {cell: cm}}``)
+    and ``metadata`` (the ``xl/metadata.xml`` part): see
+    :mod:`xlsx2txt.extensions`; ``sheet_elements`` (``{sheet name: [XML]}``),
+    ``workbook_elements`` (``[XML]``): see :mod:`xlsx2txt.elements`;
+    ``workbook_extensions``: the workbook's ``<extLst>`` entries.
     """
-    per_sheet = [shapes, sheet_extensions, cf_ids, sheet_threads, ignored_errors, cell_metadata]
-    if not (printer_settings or persons or metadata) and not any(any(m.values()) for m in per_sheet if m):
+    per_sheet = [shapes, sheet_extensions, cf_ids, sheet_threads, sheet_elements, cell_metadata]
+    whole = [printer_settings, persons, metadata, workbook_elements, workbook_extensions]
+    if not any(whole) and not any(any(m.values()) for m in per_sheet if m):
         return
     path = Path(path)
     with zipfile.ZipFile(path) as source:
@@ -316,7 +332,8 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
     _add_shapes(parts, sheet_paths, drawings, shapes or {}, media or {})
     _add_extensions(parts, sheet_paths, sheet_extensions or {}, cf_ids or {})
     _add_threads(parts, sheet_paths, sheet_threads or {}, persons or [])
-    _add_sheet_xml(parts, sheet_paths, ignored_errors or {}, cell_metadata or {}, metadata)
+    _add_sheet_xml(parts, sheet_paths, sheet_elements or {}, cell_metadata or {}, metadata)
+    _add_workbook_xml(parts, workbook_elements or [], workbook_extensions or [])
 
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as target_zip:
         # [Content_Types].xml first, as Office writes it.
@@ -356,8 +373,8 @@ def extract_sheet_extras(path) -> tuple[dict[str, dict], list[dict]]:
     """Extensions, conditional formatting links and threaded comments.
 
     Returns ``({worksheet name: {"extensions": [...], "cfIds": {...},
-    "threadedComments": [...], "ignoredErrors": XML or None, "cellMetadata":
-    {...}}}, persons)``.
+    "threadedComments": [...], "xmlElements": [...], "cellMetadata": {...}}},
+    persons)``.
     """
     result: dict[str, dict] = {}
     persons: list[dict] = []
@@ -378,7 +395,7 @@ def extract_sheet_extras(path) -> tuple[dict[str, dict], list[dict]]:
                 "extensions": exts,
                 "cfIds": ids,
                 "threadedComments": records,
-                "ignoredErrors": extensions.read_ignored_errors(sheet_xml),
+                "xmlElements": elements.read(sheet_xml, elements.SHEET_KEPT)[0],
                 "cellMetadata": extensions.read_cell_metadata(sheet_xml),
             }
         workbook_rels = "xl/_rels/workbook.xml.rels"
@@ -387,6 +404,16 @@ def extract_sheet_extras(path) -> tuple[dict[str, dict], list[dict]]:
                 if rel.target in names:
                     persons.extend(threads.read_persons(archive.read(rel.target).decode("utf-8")))
     return result, persons
+
+
+def extract_workbook_extras(path) -> dict[str, list]:
+    """Workbook elements and ``<extLst>`` entries openpyxl drops."""
+    with zipfile.ZipFile(path) as archive:
+        xml = archive.read("xl/workbook.xml").decode("utf-8")
+    return {
+        "xmlElements": elements.read(xml, elements.WORKBOOK_KEPT)[0],
+        "extensions": extensions.read_sheet(xml)[0],
+    }
 
 
 def _keeps_metadata(xml: str) -> bool:
@@ -469,6 +496,11 @@ def unsupported_warnings(path, keep_vba: bool = False) -> list[str]:
             shown = ", ".join(unknown[:5]) + (" …" if len(unknown) > 5 else "")
             warnings.append(f"{len(unknown)} unknown part(s) are not exported: {shown}")
 
+        if "xl/workbook.xml" in names:
+            workbook_xml = archive.read("xl/workbook.xml").decode("utf-8", errors="replace")
+            for name in elements.read(workbook_xml, elements.WORKBOOK_KEPT)[1]:
+                warnings.append(f"Workbook: <{name}> refers to other parts and is not exported")
+
         drawings = _sheet_drawings(archive, set(names))
         for sheet_name, sheet_path in _sheet_paths(archive).items():
             if sheet_path not in names:
@@ -476,6 +508,10 @@ def unsupported_warnings(path, keep_vba: bool = False) -> list[str]:
             xml = archive.read(sheet_path).decode("utf-8", errors="replace")
             for description in sorted(set(extensions.read_sheet(xml)[2])):
                 warnings.append(f"Sheet '{sheet_name}': {description} are not exported")
+            for description in elements.linked(xml):
+                warnings.append(f"Sheet '{sheet_name}': {description} are not exported")
+            for name in elements.read(xml, elements.SHEET_KEPT)[1]:
+                warnings.append(f"Sheet '{sheet_name}': <{name}> refers to other parts and is not exported")
             shapes = 0
             smart_art = False
             is_worksheet = sheet_path.startswith("xl/worksheets/")

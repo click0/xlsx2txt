@@ -38,7 +38,7 @@ Unlike simple text extractors, xlsx2txt preserves everything — formulas, style
 | Sparklines, extended conditional formatting and data validation (Excel 2010+) | ✅ (`extensions` in the sheet file) |
 | Threaded comments (Excel 365 conversations) | ✅ (`threadedComments` in the sheet file, authors in `workbook.json`) |
 | Dynamic array formulas (FILTER, SORT, UNIQUE…) | ✅ (`cm` on the cell, `data/metadata.xml`) |
-| Switched-off error checks (green triangles) | ✅ (`ignoredErrors` in the sheet file) |
+| Other sheet and workbook settings openpyxl drops: switched-off error checks, ranges with their own password, custom views, sort state, "open as read-only" recommended… | ✅ (`xmlElements` in the sheet file and `workbook.json`) |
 | Pivot tables | ✅ (definition and cache as indented XML in `data/pivots/`) |
 | Printer driver settings | ✅ (`data/printer/`, restored byte for byte) |
 | External links to other workbooks | ✅ |
@@ -170,7 +170,11 @@ for replies, `done` for resolved threads; `xml` keeps mentions.
 
 A formula cell with `"cm": 1` is a dynamic array formula: it spills over
 `fRef` in Excel 365 (without `cm` it is a legacy `{=...}` array formula).
-`ignoredErrors` keeps, as XML, the error checks switched off on the sheet.
+`xmlElements` (in a sheet file and in `workbook.json`) keeps, as XML, the
+elements openpyxl has no model for — e.g. `<ignoredErrors>` (switched-off
+error checks), `<protectedRanges>`, `<customSheetViews>`, `<sortState>`,
+`<fileSharing>` — and `extensions` in `workbook.json` the workbook's own
+Excel extensions.
 
 ## Git integration
 
@@ -192,7 +196,8 @@ git config diff.xlsx.textconv "xlsx2txt cat"
 
 ## Limitations
 
-- Not exported: SmartArt, slicers and timelines, form and ActiveX controls, embedded OLE
+- Not exported: SmartArt, slicers and timelines, form and ActiveX controls,
+  a sheet's background picture and pictures in its header/footer, embedded OLE
   objects, data connections and Power Query, the data model, pictures in
   cells. `export` and `info` warn about each of them (and about any other
   part of the file they do not know), so nothing is lost silently.

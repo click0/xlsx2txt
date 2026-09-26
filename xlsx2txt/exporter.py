@@ -20,6 +20,7 @@ from xlsx2txt.package import (
     extract_metadata,
     extract_printer_settings,
     extract_sheet_extras,
+    extract_workbook_extras,
     extract_shapes,
     printer_settings_name,
     unsupported_warnings,
@@ -472,8 +473,8 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
             sheet["extensions"] = extras["extensions"]
         if extras.get("threadedComments"):
             sheet["threadedComments"] = extras["threadedComments"]
-        if extras.get("ignoredErrors"):
-            sheet["ignoredErrors"] = extras["ignoredErrors"]
+        if extras.get("xmlElements"):
+            sheet["xmlElements"] = extras["xmlElements"]
         if metadata:
             for coord, cm in (extras.get("cellMetadata") or {}).items():
                 if coord in sheet["cells"]:
@@ -495,6 +496,11 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
     }
     if persons:
         workbook["persons"] = persons
+    workbook_extras = extract_workbook_extras(path)
+    if workbook_extras["xmlElements"]:
+        workbook["xmlElements"] = workbook_extras["xmlElements"]
+    if workbook_extras["extensions"]:
+        workbook["extensions"] = workbook_extras["extensions"]
     custom = _export_custom_properties(wb)
     if custom:
         workbook["customProperties"] = custom

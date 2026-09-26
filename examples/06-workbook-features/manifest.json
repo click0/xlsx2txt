@@ -4,7 +4,7 @@
   "generator": "xlsx2txt 0.6.0",
   "source": {"name": "06-workbook-features.xlsx", "type": "xlsx"},
   "sheetCount": 1,
-  "cellCount": 3,
+  "cellCount": 5,
   "hasVba": false,
   "warnings": []
 }

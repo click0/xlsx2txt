@@ -253,14 +253,18 @@ def rich_text() -> Workbook:
     return wb
 
 
-def workbook_features() -> Workbook:
-    """Link to another workbook, custom properties, protection and printing."""
+def workbook_features() -> tuple[Workbook, dict]:
+    """Link to another workbook, custom properties, protection and printing,
+    an editable range with its own password, a custom view and "open as
+    read-only" recommended."""
     wb = _new_workbook("Workbook features")
     ws = wb.active
     ws.title = "Report"
     ws["A1"] = "Budget from another file"
     ws["B1"] = "=[1]Budget!B2"
     ws["A2"] = "Protected sheet, print settings: landscape, fit to width"
+    ws["A3"] = "Cell B3 can be edited with its own password (range 'Input')"
+    ws["B3"] = 0
 
     book = ExternalBook(
         sheetNames=ExternalSheetNames(sheetName=["Budget"]),
@@ -283,7 +287,19 @@ def workbook_features() -> Workbook:
     ws.print_title_rows = "1:1"
     ws.sheet_properties.tabColor = "FFC00000"
     ws.column_dimensions["A"].width = 60
-    return wb
+    # openpyxl has no model for these; they are added to the saved file. The
+    # password hash of the range is a placeholder, not a real password.
+    return wb, {
+        "sheet_elements": {"Report": [
+            '<protectedRanges><protectedRange sqref="B3" name="Input" algorithmName="SHA-512" '
+            'hashValue="Dg5gGu0VbAqKeUzRz6dHo9nJ0mkPzqtNUnvWIBNExmuYrfgjeRUvePjPH8zhL2CrYhhlymzCP9Pyo6EZAwN7Vw==" '
+            'saltValue="yMNjgUq6n7Hs2cRldfQ+Bg==" spinCount="100000"/></protectedRanges>',
+            '<customSheetViews><customSheetView guid="{3F2504E0-4F89-11D3-9A0C-0305E82C3301}" scale="120" '
+            'showGridLines="0"><pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" '
+            'footer="0.3"/></customSheetView></customSheetViews>',
+        ]},
+        "workbook_elements": ['<fileSharing readOnlyRecommended="1"/>'],
+    }
 
 
 # openpyxl cannot create pivot tables, so this one is described in XML the way
@@ -551,7 +567,7 @@ def extensions() -> tuple[Workbook, dict]:
         "persons": PERSONS,
         "cell_metadata": {"Sales": {"J2": 1}},
         "metadata": DYNAMIC_ARRAY_METADATA,
-        "ignored_errors": {"Sales": '<ignoredErrors><ignoredError sqref="K2" numberStoredAsText="1"/></ignoredErrors>'},
+        "sheet_elements": {"Sales": ['<ignoredErrors><ignoredError sqref="K2" numberStoredAsText="1"/></ignoredErrors>']},
     }
 
 
