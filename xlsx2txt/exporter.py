@@ -15,7 +15,7 @@ from openpyxl.worksheet.formula import ArrayFormula, DataTableFormula
 from openpyxl.xml.functions import tostring
 
 from xlsx2txt import __version__
-from xlsx2txt.package import extract_printer_settings, printer_settings_name, unsupported_warnings
+from xlsx2txt.package import extract_printer_settings, extract_shapes, printer_settings_name, unsupported_warnings
 from xlsx2txt.pivots import export_pivots
 from xlsx2txt.drawings import anchor_to_json, chart_to_json, extract_images, media_name
 from xlsx2txt.styles import StyleTable, color_to_json, dxf_to_json, rich_text_to_json
@@ -420,6 +420,7 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
     warnings.extend(unsupported_warnings(path, keep_vba=is_macro))
     warnings.extend(openpyxl_warnings)
     printer = extract_printer_settings(path)
+    shapes = extract_shapes(path)
     printer_files: dict[str, bytes] = {}
     media: dict[str, bytes] = {}
     pivots = export_pivots(wb.worksheets)
@@ -437,6 +438,8 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
             sheet["images"] = sheet_images
         if ws._charts:
             sheet["charts"] = [chart_to_json(chart) for chart in ws._charts]
+        if shapes.get(ws.title):
+            sheet["shapes"] = shapes[ws.title]
         if ws.title in pivots["sheets"]:
             sheet["pivotTables"] = pivots["sheets"][ws.title]
         # Keep cells last: they are the largest part of the file.

@@ -10,8 +10,8 @@ Git-friendly JSON directory layout, with full round-trip.
 - `xlsx2txt/exporter.py` — xlsx → model (plain dict)
 - `xlsx2txt/importer.py` — model → xlsx
 - `xlsx2txt/storage.py` — model ↔ directory (`manifest.json`, `data/`, `vba/`, `_verify/`)
-- `xlsx2txt/styles.py`, `drawings.py`, `pivots.py`, `vba.py` — styles, images/charts, pivot tables, VBA sources
-- `xlsx2txt/package.py` — direct zip work: printer settings, warnings about parts that are not exported
+- `xlsx2txt/styles.py`, `drawings.py`, `shapes.py`, `pivots.py`, `vba.py` — styles, images/charts, shapes, pivot tables, VBA sources
+- `xlsx2txt/package.py` — direct zip work: printer settings, shapes, warnings about parts that are not exported
 - `xlsx2txt/compare.py` — semantic diff and validation
 - `xlsx2txt/text.py` — plain-text rendering for `cat` / git textconv
 - `xlsx2txt/cli.py` — `export`, `import`, `verify`, `diff`, `info`, `cat`

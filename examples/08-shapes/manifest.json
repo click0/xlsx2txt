@@ -1,0 +1,10 @@
+{
+  "format": "xlsx2txt",
+  "formatVersion": 1,
+  "generator": "xlsx2txt 0.4.0",
+  "source": {"name": "08-shapes.xlsx", "type": "xlsx"},
+  "sheetCount": 2,
+  "cellCount": 2,
+  "hasVba": false,
+  "warnings": []
+}

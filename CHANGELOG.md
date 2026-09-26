@@ -6,6 +6,14 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 
 ## [Unreleased]
 
+### Added
+- Shapes: text boxes, rectangles and other preset shapes, connector arrows
+  and groups are exported with the sheet (`shapes`: name, text and the
+  drawing XML) and restored on import, also on sheets without pictures or
+  charts. `cat`, `info` and `diff` show them. Shapes filled with a picture or
+  carrying a hyperlink are still only reported in the warnings.
+- Example `08-shapes`.
+
 ## [0.4.0] - 2026-09-25
 
 **Python 3.11 or newer is now required.** On Python 3.9/3.10 keep using 0.3.0.
