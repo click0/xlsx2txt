@@ -11,6 +11,7 @@ from xlsx2txt.drawings import chart_title
 from xlsx2txt.pivots import describe as describe_pivot
 from xlsx2txt.shapes import shape_cell
 from xlsx2txt.threads import person_names
+from xlsx2txt.xmlfrag import local_name
 
 
 def _color(value: Any) -> str:
@@ -95,6 +96,8 @@ def render_text(model: dict[str, Any], styles: bool = True) -> str:
         lines.append(f"name {name['name']} = {name['value']}")
     for index, link in enumerate(workbook.get("externalLinks", []), 1):
         lines.append(f"external link [{index}] -> {link['target']}")
+    for fragment in workbook.get("xmlElements", []):
+        lines.append(f"workbook element <{local_name(fragment)}>")
     if lines:
         lines.append("")
 
@@ -120,6 +123,8 @@ def render_text(model: dict[str, Any], styles: bool = True) -> str:
             for rel in (shape.get("rels") or {}).values():
                 line += f"  <link {rel['target']}>" if rel.get("external") else f"  [fill {rel.get('file')}]"
             lines.append(line)
+        for fragment in sheet.get("xmlElements", []):
+            lines.append(f"element <{local_name(fragment)}>")
         for ext in sheet.get("extensions", []):
             lines.append(f"extension: {ext.get('type')}")
         names = person_names(workbook.get("persons") or [])

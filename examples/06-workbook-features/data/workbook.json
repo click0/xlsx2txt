@@ -4,6 +4,9 @@
   "activeSheet": 0,
   "properties": {"title": "Workbook features", "creator": "xlsx2txt examples", "created": "2026-01-01T12:00:00", "modified": "2026-01-01T12:00:00"},
   "definedNames": [],
+  "xmlElements": [
+    "<fileSharing readOnlyRecommended=\"1\" xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"/>"
+  ],
   "customProperties": [
     {"name": "Department", "type": "StringProperty", "value": "Finance"},
     {"name": "Approved", "type": "BoolProperty", "value": true}

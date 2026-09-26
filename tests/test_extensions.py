@@ -243,8 +243,8 @@ def test_dynamic_arrays_and_ignored_errors(tmp_path):
     assert cell["cm"] == 1 and cell["fType"] == "array"
     assert model["metadata"] == METADATA_XML
     assert (out_dir / "data" / "metadata.xml").read_text(encoding="utf-8") == METADATA_XML
-    assert model["sheets"][0]["ignoredErrors"] == (
-        f'<ignoredErrors xmlns="{MAIN}"><ignoredError sqref="A5" numberStoredAsText="1"/></ignoredErrors>')
+    assert model["sheets"][0]["xmlElements"] == [
+        f'<ignoredErrors xmlns="{MAIN}"><ignoredError sqref="A5" numberStoredAsText="1"/></ignoredErrors>']
     assert model["manifest"]["warnings"] == []
     assert "B1: =_xlfn._xlws.SORT(A1:A3) (spills over B1:B3)" in render_text(model)
     assert roundtrip_diff(model) == []
@@ -276,7 +276,7 @@ def test_dynamic_arrays_and_ignored_errors(tmp_path):
     assert "<x14:id>" in re.search(r"<cfRule\b.*?</cfRule>", sheet, re.S).group(0)
     again = export_model(restored)
     assert again["sheets"][0]["cells"]["B1"]["cm"] == 1
-    assert again["sheets"][0]["ignoredErrors"] == model["sheets"][0]["ignoredErrors"]
+    assert again["sheets"][0]["xmlElements"] == model["sheets"][0]["xmlElements"]
     assert [shape["name"] for shape in again["sheets"][0]["shapes"]] == ["Box"]
 
 

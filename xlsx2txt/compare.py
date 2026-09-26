@@ -3,6 +3,7 @@
 from typing import Any
 
 from xlsx2txt.shapes import normalized as normalized_shapes
+from xlsx2txt.xmlfrag import local_name
 
 # Properties rewritten by Excel/openpyxl on every save.
 VOLATILE_PROPERTIES = {"modified"}
@@ -129,11 +130,23 @@ def _diff_extensions(prefix: str, exts_a: list, exts_b: list, out: list[str]) ->
             out.append(f"{label}: changed")
 
 
+def _diff_elements(prefix: str, elements_a: list, elements_b: list, out: list[str]) -> None:
+    by_name_a = {local_name(x): x for x in elements_a}
+    by_name_b = {local_name(x): x for x in elements_b}
+    for name in list(by_name_a) + [n for n in by_name_b if n not in by_name_a]:
+        if name not in by_name_b:
+            out.append(f"{prefix} <{name}>: removed")
+        elif name not in by_name_a:
+            out.append(f"{prefix} <{name}>: added")
+        elif by_name_a[name] != by_name_b[name]:
+            out.append(f"{prefix} <{name}>: changed")
+
+
 def _diff_sheet(name: str, a: dict[str, Any], b: dict[str, Any],
                 styles_a: dict[str, Any], styles_b: dict[str, Any],
                 ignore_cached: bool, out: list[str]) -> None:
     prefix = f"[{name}]"
-    skip = {"cells", "dimensions", "name", "shapes", "extensions", "threadedComments"}
+    skip = {"cells", "dimensions", "name", "shapes", "extensions", "threadedComments", "xmlElements"}
     for key in list(a) + [k for k in b if k not in a]:
         if key in skip:
             continue
@@ -142,6 +155,7 @@ def _diff_sheet(name: str, a: dict[str, Any], b: dict[str, Any],
     _diff_shapes(prefix, a.get("shapes", []), b.get("shapes", []), out)
     _diff_threads(prefix, a.get("threadedComments", []), b.get("threadedComments", []), out)
     _diff_extensions(prefix, a.get("extensions", []), b.get("extensions", []), out)
+    _diff_elements(prefix, a.get("xmlElements", []), b.get("xmlElements", []), out)
 
     _diff_values(
         f"{prefix} dimensions",
@@ -173,6 +187,8 @@ def diff_models(a: dict[str, Any], b: dict[str, Any], ignore_cached: bool = Fals
 
     wb_a = dict(a["workbook"])
     wb_b = dict(b["workbook"])
+    _diff_elements("workbook", wb_a.pop("xmlElements", []), wb_b.pop("xmlElements", []), out)
+    _diff_extensions("workbook", wb_a.pop("extensions", []), wb_b.pop("extensions", []), out)
     props_a = {k: v for k, v in wb_a.pop("properties", {}).items() if k not in VOLATILE_PROPERTIES}
     props_b = {k: v for k, v in wb_b.pop("properties", {}).items() if k not in VOLATILE_PROPERTIES}
     _diff_values("workbook.properties", props_a, props_b, out)
