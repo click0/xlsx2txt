@@ -32,6 +32,7 @@ Unlike simple text extractors, xlsx2txt preserves everything — formulas, style
 | Images | ✅ (stored in `data/media/`) |
 | Charts | ✅ (chart XML + anchor) |
 | Chart sheets | ✅ |
+| Shapes (text boxes, arrows, connectors, groups) | ✅ (drawing XML in the sheet file) |
 | Pivot tables | ✅ (definition and cache as indented XML in `data/pivots/`) |
 | Printer driver settings | ✅ (`data/printer/`, restored byte for byte) |
 | External links to other workbooks | ✅ |
@@ -147,6 +148,10 @@ Cell keys: `v` value, `t` type (`s` string, `n` number, `b` boolean,
 style), `link` hyperlink, `comment` comment. For formula cells `v` is the last
 value calculated by Excel; it is informational and ignored on import.
 
+Shapes are listed in the sheet file under `shapes`: `name` and `text` are a
+preview for diffs, `xml` is the shape as Excel stores it and is what import
+uses — edit the text inside `xml`.
+
 ## Git integration
 
 Let `git diff` show what changed inside `.xlsx` files, without exporting them:
@@ -167,7 +172,8 @@ git config diff.xlsx.textconv "xlsx2txt cat"
 
 ## Limitations
 
-- Not exported: shapes and SmartArt, threaded comments (kept as plain notes),
+- Not exported: SmartArt, shapes filled with a picture or carrying a
+  hyperlink, threaded comments (kept as plain notes),
   sparklines, slicers and timelines, form and ActiveX controls, embedded OLE
   objects, data connections and Power Query, the data model, pictures in
   cells. `export` and `info` warn about each of them (and about any other
@@ -180,6 +186,7 @@ git config diff.xlsx.textconv "xlsx2txt cat"
   column with width 0 comes back with the default width (it stays hidden).
 - Charts are stored as chart XML as understood by openpyxl; exotic chart
   features that openpyxl does not support may be lost.
+- Restored shapes are drawn above the pictures and charts of the sheet.
 - Formula results are not recalculated; Excel recalculates them when the
   restored file is opened.
 

@@ -355,6 +355,77 @@ def pivot_table() -> Workbook:
     return wb
 
 
+# ---------------------------------------------------------------------------
+# Shapes: openpyxl cannot create them, so their drawing XML (as Excel writes
+# it) is added to the saved file.
+# ---------------------------------------------------------------------------
+
+_DRAWING_NS = ('xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" '
+               'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"')
+
+
+def _anchor(start, end, body):
+    (col1, row1), (col2, row2) = start, end
+    return (f'<xdr:twoCellAnchor {_DRAWING_NS}>'
+            f'<xdr:from><xdr:col>{col1}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>{row1}</xdr:row>'
+            f'<xdr:rowOff>0</xdr:rowOff></xdr:from>'
+            f'<xdr:to><xdr:col>{col2}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>{row2}</xdr:row>'
+            f'<xdr:rowOff>0</xdr:rowOff></xdr:to>{body}<xdr:clientData/></xdr:twoCellAnchor>')
+
+
+def _shape(shape_id, name, geometry, fill, text=(), text_box=False, offset=(0, 0), size=(0, 0)):
+    paragraphs = "".join(f'<a:p><a:r><a:rPr lang="en-US" sz="1100"/><a:t>{line}</a:t></a:r></a:p>'
+                         for line in text) or '<a:p><a:endParaRPr lang="en-US" sz="1100"/></a:p>'
+    text_box_attr = ' txBox="1"' if text_box else ""
+    fill_xml = f'<a:solidFill><a:srgbClr val="{fill}"/></a:solidFill>' if fill else "<a:noFill/>"
+    return (f'<xdr:sp macro="" textlink=""><xdr:nvSpPr><xdr:cNvPr id="{shape_id}" name="{name}"/>'
+            f'<xdr:cNvSpPr{text_box_attr}/></xdr:nvSpPr>'
+            f'<xdr:spPr><a:xfrm><a:off x="{offset[0]}" y="{offset[1]}"/><a:ext cx="{size[0]}" cy="{size[1]}"/>'
+            f'</a:xfrm><a:prstGeom prst="{geometry}"><a:avLst/></a:prstGeom>{fill_xml}'
+            f'<a:ln w="9525"><a:solidFill><a:srgbClr val="305496"/></a:solidFill></a:ln></xdr:spPr>'
+            f'<xdr:txBody><a:bodyPr wrap="square" rtlCol="0" anchor="t"/><a:lstStyle/>{paragraphs}</xdr:txBody>'
+            f'</xdr:sp>')
+
+
+SHAPES = {
+    "Diagram": [
+        _anchor((4, 1), (8, 6), _shape(2, "TextBox 1", "rect", None, text_box=True, text=(
+            "Text box with two paragraphs.", "Shapes are kept as drawing XML."))),
+        _anchor((1, 8), (3, 12), _shape(3, "Rectangle 2", "rect", "DDEBF7", text=("Start",))),
+        _anchor((6, 8), (8, 12), _shape(4, "Rounded Rectangle 3", "roundRect", "E2EFDA", text=("Finish",))),
+        _anchor((3, 10), (6, 10), (
+            '<xdr:cxnSp macro=""><xdr:nvCxnSpPr><xdr:cNvPr id="5" name="Straight Arrow Connector 4"/>'
+            '<xdr:cNvCxnSpPr><a:stCxn id="3" idx="3"/><a:endCxn id="4" idx="1"/></xdr:cNvCxnSpPr>'
+            '</xdr:nvCxnSpPr><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm>'
+            '<a:prstGeom prst="straightConnector1"><a:avLst/></a:prstGeom>'
+            '<a:ln w="19050"><a:solidFill><a:srgbClr val="305496"/></a:solidFill><a:tailEnd type="triangle"/>'
+            '</a:ln></xdr:spPr></xdr:cxnSp>')),
+        _anchor((1, 14), (5, 19), (
+            '<xdr:grpSp><xdr:nvGrpSpPr><xdr:cNvPr id="8" name="Group 7"/><xdr:cNvGrpSpPr/></xdr:nvGrpSpPr>'
+            '<xdr:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="2400000" cy="900000"/>'
+            '<a:chOff x="0" y="0"/><a:chExt cx="2400000" cy="900000"/></a:xfrm></xdr:grpSpPr>'
+            + _shape(6, "Oval 5", "ellipse", "FCE4D6", text=("A",), size=(900000, 900000))
+            + _shape(7, "Oval 6", "ellipse", "FFF2CC", text=("B",), offset=(1500000, 0), size=(900000, 900000))
+            + '</xdr:grpSp>')),
+    ],
+    "Notes": [
+        _anchor((1, 1), (6, 5), _shape(2, "TextBox 1", "rect", "FFF2CC", text_box=True, text=(
+            "A sheet with shapes only:", "the drawing is created on import."))),
+    ],
+}
+
+
+def shapes() -> tuple[Workbook, dict]:
+    """Text box, shapes with text, a connector arrow and a group, next to a picture."""
+    wb = _new_workbook("Shapes")
+    ws = wb.active
+    ws.title = "Diagram"
+    ws["A1"] = "Process"
+    ws.add_image(Image(io.BytesIO(_png((48, 84, 150), (48, 48)))), "A3")
+    wb.create_sheet("Notes")["A1"] = "See the note"
+    return wb, SHAPES
+
+
 EXAMPLES = {
     "01-basic-data": basic_data,
     "02-styles": styles,
@@ -363,6 +434,7 @@ EXAMPLES = {
     "05-rich-text": rich_text,
     "06-workbook-features": workbook_features,
     "07-pivot-table": pivot_table,
+    "08-shapes": shapes,
 }
 
 
@@ -373,10 +445,14 @@ EXAMPLES = {
 _MODIFIED = re.compile(rb"<dcterms:modified([^>]*)>[^<]*</dcterms:modified>")
 
 
-def save_deterministic(wb: Workbook, path: Path) -> None:
+def save_deterministic(wb: Workbook, path: Path, shapes: dict | None = None) -> None:
     """Save reproducibly: openpyxl stamps the document and zip entries with 'now'."""
-    buffer = io.BytesIO()
-    wb.save(buffer)
+    from xlsx2txt.package import patch_package
+
+    wb.save(path)
+    if shapes:
+        patch_package(path, shapes=shapes)
+    buffer = io.BytesIO(path.read_bytes())
     stamp = FIXED_DATE.strftime("%Y-%m-%dT%H:%M:%SZ").encode()
     source = zipfile.ZipFile(io.BytesIO(buffer.getvalue()))
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as target:
@@ -397,7 +473,9 @@ def generate(target_dir: Path = EXAMPLES_DIR, export: bool = True) -> list:
     written = []
     for name, build in EXAMPLES.items():
         path = target_dir / f"{name}.xlsx"
-        save_deterministic(build(), path)
+        built = build()
+        wb, shapes_xml = built if isinstance(built, tuple) else (built, None)
+        save_deterministic(wb, path, shapes_xml)
         written.append(path)
         if export:
             export_xlsx(path, target_dir / name, force=True)

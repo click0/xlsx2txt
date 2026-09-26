@@ -2,6 +2,8 @@
 
 from typing import Any
 
+from xlsx2txt.shapes import normalized as normalized_shapes
+
 # Properties rewritten by Excel/openpyxl on every save.
 VOLATILE_PROPERTIES = {"modified"}
 
@@ -76,11 +78,24 @@ def _diff_sheet(name: str, a: dict[str, Any], b: dict[str, Any],
                 styles_a: dict[str, Any], styles_b: dict[str, Any],
                 ignore_cached: bool, out: list[str]) -> None:
     prefix = f"[{name}]"
-    skip = {"cells", "dimensions", "name"}
+    skip = {"cells", "dimensions", "name", "shapes"}
     for key in list(a) + [k for k in b if k not in a]:
         if key in skip:
             continue
         _diff_values(f"{prefix} {key}", a.get(key), b.get(key), out)
+
+    shapes_a = a.get("shapes", [])
+    shapes_b = b.get("shapes", [])
+    xml_a = normalized_shapes(shapes_a)
+    xml_b = normalized_shapes(shapes_b)
+    for i in range(max(len(xml_a), len(xml_b))):
+        if i >= len(xml_b):
+            out.append(f"{prefix} shape {shapes_a[i].get('name', i + 1)!r}: removed")
+        elif i >= len(xml_a):
+            out.append(f"{prefix} shape {shapes_b[i].get('name', i + 1)!r}: added")
+        elif xml_a[i] != xml_b[i]:
+            what = "text changed" if shapes_a[i].get("text") != shapes_b[i].get("text") else "changed"
+            out.append(f"{prefix} shape {shapes_a[i].get('name', i + 1)!r}: {what}")
 
     _diff_values(
         f"{prefix} dimensions",
@@ -204,6 +219,9 @@ def validate_model(model: dict[str, Any]) -> list[str]:
             for name in names:
                 if name not in pivots:
                     errors.append(f"[{sheet.get('name')}] pivot file not found: data/pivots/{name}")
+        for number, shape in enumerate(sheet.get("shapes", []), start=1):
+            if not isinstance(shape.get("xml"), str) or not shape["xml"].startswith("<"):
+                errors.append(f"[{sheet.get('name')}] shape {number}: no XML")
         for image in sheet.get("images", []):
             if image.get("file") not in media:
                 errors.append(f"[{sheet.get('name')}] image file not found: data/media/{image.get('file')}")
