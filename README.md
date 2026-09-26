@@ -35,6 +35,8 @@ Unlike simple text extractors, xlsx2txt preserves everything — formulas, style
 | Charts | ✅ (chart XML + anchor) |
 | Chart sheets | ✅ |
 | Shapes (text boxes, arrows, connectors, groups) | ✅ (drawing XML in the sheet file) |
+| Sparklines, extended conditional formatting and data validation (Excel 2010+) | ✅ (`extensions` in the sheet file) |
+| Threaded comments (Excel 365 conversations) | ✅ (`threadedComments` in the sheet file, authors in `workbook.json`) |
 | Pivot tables | ✅ (definition and cache as indented XML in `data/pivots/`) |
 | Printer driver settings | ✅ (`data/printer/`, restored byte for byte) |
 | External links to other workbooks | ✅ |
@@ -111,7 +113,7 @@ print(diff_models(load_model("report.xlsx"), load_model("report_new.xlsx")))
 report/
 ├── manifest.json           # Format version, source file, warnings
 ├── data/
-│   ├── workbook.json       # Properties, sheet order, defined names, epoch
+│   ├── workbook.json       # Properties, sheet order, defined names, epoch, comment authors
 │   ├── sheets/
 │   │   ├── _index.json     # Sheet name -> file name
 │   │   └── Sheet1.json     # Cells, formulas, dimensions, merges, rules
@@ -156,6 +158,13 @@ uses — edit the text inside `xml`. `rels` holds what the shape links to (a
 hyperlink target, or a picture fill stored in `data/media/`), `layer` the
 number of pictures and charts drawn below it (absent when it is on top).
 
+`extensions` keeps the sheet's Excel 2010+ extensions (sparklines, extended
+conditional formatting such as negative data bars, drop-down lists from
+other sheets) as XML; a conditional formatting rule linked to one has
+`extId`. `threadedComments` has one record per comment or reply: `ref` cell,
+`personId` (see `persons` in `workbook.json`), `dT` date, `text`, `parentId`
+for replies, `done` for resolved threads; `xml` keeps mentions.
+
 ## Git integration
 
 Let `git diff` show what changed inside `.xlsx` files, without exporting them:
@@ -176,8 +185,7 @@ git config diff.xlsx.textconv "xlsx2txt cat"
 
 ## Limitations
 
-- Not exported: SmartArt, threaded comments (kept as plain notes),
-  sparklines, slicers and timelines, form and ActiveX controls, embedded OLE
+- Not exported: SmartArt, slicers and timelines, form and ActiveX controls, embedded OLE
   objects, data connections and Power Query, the data model, pictures in
   cells. `export` and `info` warn about each of them (and about any other
   part of the file they do not know), so nothing is lost silently.

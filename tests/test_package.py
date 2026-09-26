@@ -137,9 +137,11 @@ def test_warnings_for_lost_parts(tmp_path):
     wb.active.add_image(Image(BytesIO(_png())), "B2")
     wb.save(path)
 
-    sparkline = ('<extLst><ext uri="{05C60535-1F16-4fd2-B633-F4F36F0B64E0}" '
-                 'xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main">'
-                 '<x14:sparklineGroups/></ext></extLst></worksheet>')
+    # A slicer list refers to slicer parts through relationships: not exported.
+    slicer_list = ('<extLst><ext uri="{A8765BA9-456A-4dab-B4F3-ACF838C121DE}" '
+                   'xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main">'
+                   '<x14:slicerList><x14:slicer xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/'
+                   'relationships" r:id="rId8"/></x14:slicerList></ext></extLst></worksheet>')
     # openpyxl writes drawings in the default namespace (Excel uses the xdr: prefix).
     # A shape linking to a relationship the drawing does not have cannot be kept.
     shape = ('<twoCellAnchor><from><col>5</col><colOff>0</colOff><row>5</row><rowOff>0</rowOff></from>'
@@ -149,28 +151,25 @@ def test_warnings_for_lost_parts(tmp_path):
              'r:id="rId9"/></cNvPr><cNvSpPr/></nvSpPr><spPr/></sp><clientData/>'
              '</twoCellAnchor></wsDr>')
     _rewrite(path, {
-        "xl/worksheets/sheet1.xml": lambda text: text.replace("</worksheet>", sparkline),
+        "xl/worksheets/sheet1.xml": lambda text: text.replace("</worksheet>", slicer_list),
         "xl/drawings/drawing1.xml": lambda text: text.replace("</wsDr>", shape),
     }, {
-        "xl/threadedComments/threadedComment1.xml": b"<ThreadedComments/>",
-        "xl/persons/person.xml": b"<personList/>",
         "xl/slicers/slicer1.xml": b"<slicers/>",
         "xl/connections.xml": b"<connections/>",
         "xl/unknownThing/part1.xml": b"<x/>",
     })
 
     warnings = unsupported_warnings(path)
-    assert "threaded comments (kept only as plain notes): 1 part(s) are not exported" in warnings
     assert "slicers: 1 part(s) are not exported" in warnings
     assert "data connections / queries: 1 part(s) are not exported" in warnings
     assert "1 unknown part(s) are not exported: xl/unknownThing/part1.xml" in warnings
-    assert "Sheet 'Data': sparklines are not exported" in warnings
+    assert "Sheet 'Data': slicers are not exported" in warnings
     assert "Sheet 'Data': 1 form control(s) or shape(s) with unsupported links are not exported" in warnings
-    assert not any("person" in w for w in warnings)
 
     model = export_model(path)
     assert model["manifest"]["warnings"][:len(warnings)] == warnings
-    assert any("Sparkline" in w for w in model["manifest"]["warnings"])  # openpyxl's own note
+    # openpyxl's "extension is not supported" notes are replaced by the warnings above.
+    assert not any("extension is not supported" in w for w in model["manifest"]["warnings"])
     assert len(model["media"]) == 1  # the picture next to the shape is still exported
 
 

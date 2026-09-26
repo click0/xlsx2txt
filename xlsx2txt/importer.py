@@ -24,6 +24,7 @@ from openpyxl.worksheet.table import Table
 from openpyxl.xml.functions import fromstring
 
 from xlsx2txt.drawings import build_image, chart_from_json
+from xlsx2txt.extensions import cf_key
 from xlsx2txt.package import patch_package
 from xlsx2txt.pivots import PivotBuilder
 from xlsx2txt.styles import (
@@ -200,6 +201,7 @@ def _import_sheet(wb: Workbook, sheet: dict[str, Any], applier: StyleApplier,
                 if part in data:
                     kwargs[part] = cls.from_tree(fromstring(data.pop(part)))
             dxf = dxf_from_json(data.pop("dxf", None))
+            data.pop("extId", None)  # linked after saving, see import_model()
             rule = Rule(dxf=dxf, **data, **kwargs)
             ws.conditional_formatting.add(block["range"], rule)
 
@@ -331,7 +333,8 @@ def import_model(model: dict[str, Any], output: str | Path) -> Path:
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     build_workbook(model).save(output)
-    # openpyxl does not write printer settings and shapes; add them to the saved package.
+    # openpyxl does not write printer settings, shapes, worksheet extensions
+    # and threaded comments; add them to the saved package.
     files = model.get("printerSettings") or {}
     settings = {
         sheet["name"]: files[sheet["printerSettings"]]
@@ -339,5 +342,21 @@ def import_model(model: dict[str, Any], output: str | Path) -> Path:
         if sheet.get("printerSettings") in files
     }
     shapes = {sheet["name"]: sheet.get("shapes", []) for sheet in model["sheets"]}
-    patch_package(output, printer_settings=settings, shapes=shapes, media=model.get("media") or {})
+    cf_ids = {
+        sheet["name"]: {
+            cf_key(block["range"], rule.get("priority", 0)): rule["extId"]
+            for block in sheet.get("conditionalFormatting", []) for rule in block["rules"] if rule.get("extId")
+        }
+        for sheet in model["sheets"]
+    }
+    patch_package(
+        output,
+        printer_settings=settings,
+        shapes=shapes,
+        media=model.get("media") or {},
+        sheet_extensions={sheet["name"]: sheet.get("extensions", []) for sheet in model["sheets"]},
+        cf_ids=cf_ids,
+        sheet_threads={sheet["name"]: sheet.get("threadedComments", []) for sheet in model["sheets"]},
+        persons=model["workbook"].get("persons") or [],
+    )
     return output

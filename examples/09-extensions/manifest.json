@@ -1,0 +1,10 @@
+{
+  "format": "xlsx2txt",
+  "formatVersion": 1,
+  "generator": "xlsx2txt 0.5.0",
+  "source": {"name": "09-extensions.xlsx", "type": "xlsx"},
+  "sheetCount": 2,
+  "cellCount": 39,
+  "hasVba": false,
+  "warnings": []
+}

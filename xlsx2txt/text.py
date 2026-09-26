@@ -10,6 +10,7 @@ from xlsx2txt.compare import resolve_style
 from xlsx2txt.drawings import chart_title
 from xlsx2txt.pivots import describe as describe_pivot
 from xlsx2txt.shapes import shape_cell
+from xlsx2txt.threads import person_names
 
 
 def _color(value: Any) -> str:
@@ -117,6 +118,14 @@ def render_text(model: dict[str, Any], styles: bool = True) -> str:
             for rel in (shape.get("rels") or {}).values():
                 line += f"  <link {rel['target']}>" if rel.get("external") else f"  [fill {rel.get('file')}]"
             lines.append(line)
+        for ext in sheet.get("extensions", []):
+            lines.append(f"extension: {ext.get('type')}")
+        names = person_names(workbook.get("persons") or [])
+        for record in sheet.get("threadedComments", []):
+            author = names.get(record.get("personId"), record.get("personId", "?"))
+            kind = "  reply" if record.get("parentId") else f"thread at {record.get('ref')}"
+            done = " [resolved]" if record.get("done") in ("1", "true") else ""
+            lines.append(f"{kind}{done}: {author}: {record.get('text', '')!r}")
         for entry in sheet.get("pivotTables", []):
             description = describe_pivot((model.get("pivots") or {}).get(entry["table"], ""))
             lines.append(f"pivot table {description or entry['table']}")

@@ -6,6 +6,23 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 
 ## [Unreleased]
 
+### Added
+- Sparklines, extended conditional formatting (e.g. data bars with negative
+  values and an axis, custom icon sets) and extended data validation
+  (drop-down lists from other sheets) — the Excel 2010+ extensions of a sheet
+  — are exported (`extensions`) and restored, including the link between a
+  conditional formatting rule and its extended options (`extId`).
+- Threaded comments (Excel 365 conversations): every comment and reply with
+  its cell, author, date, text, resolved state and mentions is exported
+  (`threadedComments`, authors in `workbook.persons`) and restored; `cat`
+  shows the conversations and `diff` the changed comments.
+- Example `09-extensions`.
+
+### Changed
+- openpyxl's "extension is not supported and will be removed" notes are no
+  longer copied into the warnings: extensions are kept now, and the ones that
+  are not (slicers, timelines) get their own warning.
+
 ## [0.5.0] - 2026-09-26
 
 ### Added

@@ -1,0 +1,15 @@
+{
+  "name": "Lists",
+  "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
+  "usedRange": "A1:A3",
+  "dimensions": {"columns": {}, "rows": {}},
+  "mergedCells": [],
+  "print": {
+    "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
+  },
+  "cells": {
+    "A1": {"v": "Open", "t": "s"},
+    "A2": {"v": "In progress", "t": "s"},
+    "A3": {"v": "Done", "t": "s"}
+  }
+}
