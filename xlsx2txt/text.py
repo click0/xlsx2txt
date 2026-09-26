@@ -67,7 +67,9 @@ def _value(record: dict[str, Any]) -> str:
     value_type = record.get("t")
     if value_type == "f":
         text = record.get("f") or f"<{record.get('fType', 'formula')}>"
-        if record.get("fType") == "array":
+        if record.get("fType") == "array" and "cm" in record:
+            text = f"{text} (spills over {record.get('fRef')})"  # dynamic array
+        elif record.get("fType") == "array":
             text = f"{{{text}}} over {record.get('fRef')}"
         if "v" in record:
             text += f"  -> {record['v']!r}"

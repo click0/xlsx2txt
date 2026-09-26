@@ -8,13 +8,19 @@ parts is kept as a self-contained XML fragment and written back on import.
 Conditional formatting rules that have extended options point at them with
 an id (``<x14:id>`` in the rule's own ``<extLst>``); openpyxl drops that
 link too, so it is exported with the rule as ``extId`` and restored.
+
+Two more pieces of worksheet XML openpyxl drops are kept here as well:
+``<ignoredErrors>`` (error checks the user switched off, the green
+triangles) and the ``cm`` attribute of cells, which points dynamic array
+formulas (FILTER, SORT, UNIQUE...) at ``xl/metadata.xml``; without it Excel
+shows them as legacy ``{=...}`` array formulas.
 """
 
 import html
 import re
 from typing import Any
 
-from xlsx2txt.xmlfrag import self_contained, split_children
+from xlsx2txt.xmlfrag import insert_child, self_contained, split_children
 
 X14_NS = "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"
 CF_EXT_URI = "{B025F937-C7B1-47D3-B67F-A62EFF666E3E}"
@@ -114,3 +120,52 @@ def write_sheet(sheet_xml: str, extensions: list[dict[str, Any]], ids: dict[str,
             end = sheet_xml.rindex("</")
             sheet_xml = sheet_xml[:end] + f"<extLst>{fragments}</extLst>" + sheet_xml[end:]
     return sheet_xml
+
+
+# ---------------------------------------------------------------------------
+# <ignoredErrors> and cell metadata
+# ---------------------------------------------------------------------------
+
+METADATA_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/sheetMetadata"
+METADATA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheetMetadata+xml"
+# Elements that follow <ignoredErrors> in a worksheet (ECMA-376, CT_Worksheet).
+_AFTER_IGNORED = {"smartTags", "drawing", "legacyDrawing", "legacyDrawingHF", "drawingHF", "picture",
+                  "oleObjects", "controls", "webPublishItems", "tableParts", "extLst"}
+_CELL_TAG = re.compile(r"<(?:\w+:)?c\b([^>]*?)/?>")
+_REF = re.compile(r"\br=\"([A-Z]+[0-9]+)\"")
+_CM = re.compile(r"\bcm=\"(\d+)\"")
+
+
+def read_ignored_errors(sheet_xml: str) -> str | None:
+    root, children = split_children(sheet_xml)
+    for child in children:
+        if _local(child) == "ignoredErrors":
+            return self_contained(child, root)
+    return None
+
+
+def write_ignored_errors(sheet_xml: str, fragment: str) -> str:
+    return insert_child(sheet_xml, fragment, _AFTER_IGNORED)
+
+
+def read_cell_metadata(sheet_xml: str) -> dict[str, int]:
+    """``{cell: cm}`` for cells that refer to cell metadata (dynamic arrays)."""
+    result = {}
+    for attrs in _CELL_TAG.findall(sheet_xml):
+        cm = _CM.search(attrs)
+        ref = _REF.search(attrs)
+        if cm and ref:
+            result[ref.group(1)] = int(cm.group(1))
+    return result
+
+
+def write_cell_metadata(sheet_xml: str, cells: dict[str, int]) -> str:
+    def cell(match: re.Match) -> str:
+        ref = _REF.search(match.group(1))
+        cm = cells.get(ref.group(1)) if ref else None
+        if cm is None or _CM.search(match.group(1)):
+            return match.group(0)
+        tag = match.group(0)
+        end = len(tag) - (2 if tag.endswith("/>") else 1)
+        return f'{tag[:end]} cm="{cm}"{tag[end:]}'
+    return _CELL_TAG.sub(cell, sheet_xml)

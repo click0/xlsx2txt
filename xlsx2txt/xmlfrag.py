@@ -14,12 +14,12 @@ _TAG = re.compile(r"<!--.*?-->|<\?.*?\?>|<!\[CDATA\[.*?\]\]>|<(/?)([\w.:-]+)((?:
 _XMLNS = re.compile(r"\bxmlns(?::([\w.-]+))?=(\"[^\"]*\"|'[^']*')")
 
 
-def split_children(xml: str) -> tuple[str, list[str]]:
-    """Split an XML part into its root start tag and its top-level elements."""
+def child_spans(xml: str) -> tuple[str, list[tuple[int, int]]]:
+    """The root start tag of an XML part and the spans of its top-level elements."""
     depth = 0
     root = ""
     start = None
-    children = []
+    spans = []
     for match in _TAG.finditer(xml):
         closing, name, _, self_closing = match.groups()
         if name is None:
@@ -27,7 +27,7 @@ def split_children(xml: str) -> tuple[str, list[str]]:
         if closing:
             depth -= 1
             if depth == 1 and start is not None:
-                children.append(xml[start:match.end()])
+                spans.append((start, match.end()))
                 start = None
         else:
             if depth == 0:
@@ -35,11 +35,29 @@ def split_children(xml: str) -> tuple[str, list[str]]:
             elif depth == 1:
                 start = match.start()
                 if self_closing:
-                    children.append(match.group(0))
+                    spans.append((start, match.end()))
                     start = None
             if not self_closing:
                 depth += 1
-    return root, children
+    return root, spans
+
+
+def split_children(xml: str) -> tuple[str, list[str]]:
+    """Split an XML part into its root start tag and its top-level elements."""
+    root, spans = child_spans(xml)
+    return root, [xml[a:b] for a, b in spans]
+
+
+def local_name(fragment: str) -> str:
+    return re.match(r"<([\w.:-]+)", fragment).group(1).rsplit(":", 1)[-1]
+
+
+def insert_child(xml: str, fragment: str, before: set[str]) -> str:
+    """Insert a top-level element before the first top-level element named in
+    ``before`` (schemas fix the order of children), or at the end."""
+    _, spans = child_spans(xml)
+    position = next((a for a, b in spans if local_name(xml[a:b]) in before), xml.rindex("</"))
+    return xml[:position] + fragment + xml[position:]
 
 
 def self_contained(fragment: str, root: str) -> str:

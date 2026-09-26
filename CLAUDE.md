@@ -11,7 +11,7 @@ Git-friendly JSON directory layout, with full round-trip.
 - `xlsx2txt/importer.py` — model → xlsx
 - `xlsx2txt/storage.py` — model ↔ directory (`manifest.json`, `data/`, `vba/`, `_verify/`)
 - `xlsx2txt/styles.py`, `drawings.py`, `shapes.py`, `pivots.py`, `vba.py` — styles, images/charts, shapes, pivot tables, VBA sources
-- `xlsx2txt/extensions.py`, `threads.py` — worksheet `<extLst>` (sparklines, x14 rules), threaded comments
+- `xlsx2txt/extensions.py`, `threads.py` — worksheet `<extLst>` (sparklines, x14 rules), `<ignoredErrors>`, dynamic array cell metadata; threaded comments
 - `xlsx2txt/xmlfrag.py` — XML fragments kept byte for byte (split children, inherited namespaces)
 - `xlsx2txt/package.py` — direct zip work: printer settings, shapes, extensions, threaded comments, warnings about parts that are not exported
 - `xlsx2txt/compare.py` — semantic diff and validation

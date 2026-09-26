@@ -358,5 +358,11 @@ def import_model(model: dict[str, Any], output: str | Path) -> Path:
         cf_ids=cf_ids,
         sheet_threads={sheet["name"]: sheet.get("threadedComments", []) for sheet in model["sheets"]},
         persons=model["workbook"].get("persons") or [],
+        ignored_errors={s["name"]: s["ignoredErrors"] for s in model["sheets"] if s.get("ignoredErrors")},
+        cell_metadata={
+            s["name"]: {coord: r["cm"] for coord, r in s.get("cells", {}).items() if "cm" in r}
+            for s in model["sheets"]
+        },
+        metadata=model.get("metadata"),
     )
     return output

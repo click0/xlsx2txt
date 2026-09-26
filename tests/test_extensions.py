@@ -185,3 +185,107 @@ def test_thread_changes_in_diff(tmp_path):
     ]
     edited["sheets"][0]["threadedComments"][0]["personId"] = "{unknown}"
     assert any("unknown person" in e for e in validate_model(edited))
+
+
+METADATA_XML = (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+    f'<metadata xmlns="{MAIN}" xmlns:xda="http://schemas.microsoft.com/office/spreadsheetml/2017/dynamicarray">'
+    '<metadataTypes count="1"><metadataType name="XLDAPR" minSupportedVersion="120000" copy="1" pasteAll="1" '
+    'pasteValues="1" merge="1" splitFirst="1" rowColShift="1" clearFormats="1" clearComments="1" assign="1" '
+    'coerce="1" cellMeta="1"/></metadataTypes><futureMetadata name="XLDAPR" count="1"><bk><extLst>'
+    '<ext uri="{bdbb8cdc-fa1e-496e-a857-3c3f30c029c3}"><xda:dynamicArrayProperties fDynamic="1" fCollapsed="0"/>'
+    '</ext></extLst></bk></futureMetadata><cellMetadata count="1"><bk><rc t="1" v="0"/></bk></cellMetadata>'
+    '</metadata>'
+)
+IGNORED = '<ignoredErrors><ignoredError sqref="A5" numberStoredAsText="1"/></ignoredErrors>'
+
+
+def _dynamic_array(path, metadata=METADATA_XML):
+    """A dynamic array formula as Excel 365 writes it, and a disabled error check."""
+    from openpyxl.worksheet.formula import ArrayFormula
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Data"
+    for row, value in enumerate([3, 1, 2], start=1):
+        ws.cell(row, 1, value)
+    ws["B1"] = ArrayFormula("B1:B3", "=_xlfn._xlws.SORT(A1:A3)")
+    ws["A5"] = "007"
+    ws.conditional_formatting.add("A1:A3", DataBarRule(start_type="min", end_type="max", color="FF638EC6"))
+    wb.save(path)
+    with zipfile.ZipFile(path) as source:
+        parts = {name: source.read(name) for name in source.namelist()}
+    sheet = parts["xl/worksheets/sheet1.xml"].decode()
+    sheet = sheet.replace('<c r="B1"', '<c r="B1" cm="1"', 1)
+    sheet = sheet.replace("</worksheet>", IGNORED + "</worksheet>")
+    parts["xl/worksheets/sheet1.xml"] = sheet.encode()
+    parts["xl/metadata.xml"] = metadata.encode()
+    wb_rels = parts["xl/_rels/workbook.xml.rels"].decode()
+    parts["xl/_rels/workbook.xml.rels"] = wb_rels.replace("</Relationships>", (
+        '<Relationship Id="rId98" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/'
+        'sheetMetadata" Target="metadata.xml"/></Relationships>')).encode()
+    types = parts["[Content_Types].xml"].decode()
+    parts["[Content_Types].xml"] = types.replace("</Types>", (
+        '<Override PartName="/xl/metadata.xml" '
+        'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheetMetadata+xml"/></Types>'
+    )).encode()
+    with zipfile.ZipFile(path, "w") as target:
+        for name, content in parts.items():
+            target.writestr(name, content)
+
+
+def test_dynamic_arrays_and_ignored_errors(tmp_path):
+    source = tmp_path / "dyn.xlsx"
+    _dynamic_array(source)
+    out_dir = tmp_path / "out"
+    model = export_xlsx(source, out_dir)
+    cell = model["sheets"][0]["cells"]["B1"]
+    assert cell["cm"] == 1 and cell["fType"] == "array"
+    assert model["metadata"] == METADATA_XML
+    assert (out_dir / "data" / "metadata.xml").read_text(encoding="utf-8") == METADATA_XML
+    assert model["sheets"][0]["ignoredErrors"] == (
+        f'<ignoredErrors xmlns="{MAIN}"><ignoredError sqref="A5" numberStoredAsText="1"/></ignoredErrors>')
+    assert model["manifest"]["warnings"] == []
+    assert "B1: =_xlfn._xlws.SORT(A1:A3) (spills over B1:B3)" in render_text(model)
+    assert roundtrip_diff(model) == []
+
+    # Move a shape onto the sheet too: <drawing> and <ignoredErrors> must both
+    # land in schema order, around the rule's own <extLst>.
+    model["sheets"][0]["conditionalFormatting"][0]["rules"][0]["extId"] = "{00000000-0000-0000-0000-0000000000E1}"
+    model["sheets"][0]["shapes"] = [{"name": "Box", "xml": (
+        '<xdr:twoCellAnchor xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" '
+        'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><xdr:from><xdr:col>3</xdr:col>'
+        '<xdr:colOff>0</xdr:colOff><xdr:row>1</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:to>'
+        '<xdr:col>5</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>3</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>'
+        '<xdr:sp macro="" textlink=""><xdr:nvSpPr><xdr:cNvPr id="2" name="Box"/><xdr:cNvSpPr/></xdr:nvSpPr>'
+        '<xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:sp><xdr:clientData/>'
+        '</xdr:twoCellAnchor>')}]
+    restored = tmp_path / "restored.xlsx"
+    from xlsx2txt.importer import import_model
+    import_model(model, restored)
+    with zipfile.ZipFile(restored) as archive:
+        sheet = archive.read("xl/worksheets/sheet1.xml").decode()
+        assert archive.read("xl/metadata.xml").decode() == METADATA_XML
+        assert "sheetMetadata" in archive.read("xl/_rels/workbook.xml.rels").decode()
+        assert "sheetMetadata+xml" in archive.read("[Content_Types].xml").decode()
+    assert re.search(r'<c r="B1" cm="1">', sheet)
+    from xlsx2txt.xmlfrag import local_name, split_children
+    order = [local_name(child) for child in split_children(sheet)[1]]
+    assert order.index("pageMargins") < order.index("ignoredErrors") < order.index("drawing")
+    assert "extLst" not in order  # the rule's own extLst stays inside <cfRule>
+    assert "<x14:id>" in re.search(r"<cfRule\b.*?</cfRule>", sheet, re.S).group(0)
+    again = export_model(restored)
+    assert again["sheets"][0]["cells"]["B1"]["cm"] == 1
+    assert again["sheets"][0]["ignoredErrors"] == model["sheets"][0]["ignoredErrors"]
+    assert [shape["name"] for shape in again["sheets"][0]["shapes"]] == ["Box"]
+
+
+def test_metadata_of_pictures_in_cells_is_not_kept(tmp_path):
+    source = tmp_path / "rich.xlsx"
+    _dynamic_array(source, METADATA_XML.replace("</metadata>", '<valueMetadata count="1"><bk><rc t="1" v="0"/>'
+                                                                '</bk></valueMetadata></metadata>'))
+    model = export_model(source)
+    assert model["metadata"] is None
+    assert "cm" not in model["sheets"][0]["cells"]["B1"]
+    assert "cell metadata of pictures in cells / rich data types: 1 part(s) are not exported" in (
+        model["manifest"]["warnings"])

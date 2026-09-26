@@ -14,7 +14,7 @@ what the text format looks like without running anything.
 | `06-workbook-features` | Link to another workbook, custom document properties, sheet protection, print settings, tab color |
 | `07-pivot-table` | Pivot table with its cache (`data/pivots/`) |
 | `08-shapes` | Text box, shapes with text, a connector arrow, a group, a shape behind a picture, a shape with a hyperlink and one filled with a picture; a sheet with shapes only |
-| `09-extensions` | Sparklines, a data bar with negative values, a drop-down list from another sheet, a threaded comment with a reply |
+| `09-extensions` | Sparklines, a data bar with negative values, a drop-down list from another sheet, a threaded comment with a reply, a dynamic array formula, a switched-off error check |
 
 Try it:
 
