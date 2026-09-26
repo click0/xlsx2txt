@@ -1,7 +1,7 @@
 {
   "name": "Sales",
   "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
-  "usedRange": "A1:H5",
+  "usedRange": "A1:K5",
   "dimensions": {
     "columns": {
       "A": {"width": 12.0},
@@ -45,6 +45,7 @@
     {"ref": "A3", "id": "{6D3A9E4C-2F5B-4C7D-9E8F-0A1B2C3D4E5F}", "personId": "{4B1E7C2A-0D3F-4A5B-9C6D-7E8F9A0B1C2D}", "dT": "2026-01-01T12:00:00.00", "text": "Is Q4 final?"},
     {"ref": "A3", "id": "{7E4B0F5D-3A6C-4D8E-8F9A-1B2C3D4E5F60}", "parentId": "{6D3A9E4C-2F5B-4C7D-9E8F-0A1B2C3D4E5F}", "personId": "{5C2F8D3B-1E4A-4B6C-8D7E-9F0A1B2C3D4E}", "dT": "2026-01-02T09:30:00.00", "text": "Yes, checked twice."}
   ],
+  "ignoredErrors": "<ignoredErrors xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><ignoredError sqref=\"K2\" numberStoredAsText=\"1\"/></ignoredErrors>",
   "cells": {
     "A1": {"v": "Region", "t": "s", "s": 1},
     "B1": {"v": "Q1", "t": "s", "s": 1},
@@ -54,6 +55,8 @@
     "F1": {"v": "Change", "t": "s", "s": 1},
     "G1": {"v": "Trend", "t": "s", "s": 1},
     "H1": {"v": "Status", "t": "s", "s": 1},
+    "J1": {"v": "Sorted", "t": "s"},
+    "K1": {"v": "Code", "t": "s"},
     "A2": {"v": "North", "t": "s"},
     "B2": {"v": 120, "t": "n"},
     "C2": {"v": 135, "t": "n"},
@@ -61,6 +64,8 @@
     "E2": {"v": 160, "t": "n"},
     "F2": {"t": "f", "f": "=E2-B2"},
     "H2": {"v": "Open", "t": "s"},
+    "J2": {"t": "f", "f": "=_xlfn._xlws.SORT(A2:A5)", "fType": "array", "fRef": "J2:J5", "cm": 1},
+    "K2": {"v": "0042", "t": "s"},
     "A3": {
       "v": "South",
       "t": "s",
@@ -72,6 +77,7 @@
     "E3": {"v": 65, "t": "n"},
     "F3": {"t": "f", "f": "=E3-B3"},
     "H3": {"v": "Open", "t": "s"},
+    "J3": {"v": "North", "t": "s"},
     "A4": {"v": "East", "t": "s"},
     "B4": {"v": 60, "t": "n"},
     "C4": {"v": 75, "t": "n"},
@@ -79,12 +85,14 @@
     "E4": {"v": 110, "t": "n"},
     "F4": {"t": "f", "f": "=E4-B4"},
     "H4": {"v": "Open", "t": "s"},
+    "J4": {"v": "South", "t": "s"},
     "A5": {"v": "West", "t": "s"},
     "B5": {"v": 140, "t": "n"},
     "C5": {"v": 120, "t": "n"},
     "D5": {"v": 150, "t": "n"},
     "E5": {"v": 145, "t": "n"},
     "F5": {"t": "f", "f": "=E5-B5"},
-    "H5": {"v": "Open", "t": "s"}
+    "H5": {"v": "Open", "t": "s"},
+    "J5": {"v": "West", "t": "s"}
   }
 }

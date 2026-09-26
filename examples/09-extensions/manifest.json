@@ -4,7 +4,7 @@
   "generator": "xlsx2txt 0.6.0",
   "source": {"name": "09-extensions.xlsx", "type": "xlsx"},
   "sheetCount": 2,
-  "cellCount": 39,
+  "cellCount": 46,
   "hasVba": false,
   "warnings": []
 }

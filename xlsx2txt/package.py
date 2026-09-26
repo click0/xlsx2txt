@@ -23,6 +23,7 @@ from openpyxl.packaging.relationship import get_dependents, get_rels_path
 from openpyxl.reader.workbook import WorkbookParser
 
 from xlsx2txt import extensions, threads
+from xlsx2txt.xmlfrag import insert_child
 from xlsx2txt.shapes import (
     EMPTY_DRAWING,
     add_to_drawing,
@@ -128,16 +129,12 @@ def _link_page_setup(sheet_xml: str, rel_id: str) -> str:
 
 
 # Elements that follow <drawing> in a worksheet (ECMA-376, CT_Worksheet).
-_AFTER_DRAWING = re.compile(
-    r"<(legacyDrawing|legacyDrawingHF|drawingHF|picture|oleObjects|controls|webPublishItems|tableParts|extLst)\b"
-    r"|</worksheet>"
-)
+_AFTER_DRAWING = {"legacyDrawing", "legacyDrawingHF", "drawingHF", "picture", "oleObjects", "controls",
+                  "webPublishItems", "tableParts", "extLst"}
 
 
 def _link_drawing(sheet_xml: str, rel_id: str) -> str:
-    sheet_xml = _declare_r(sheet_xml)
-    position = _AFTER_DRAWING.search(sheet_xml).start()
-    return sheet_xml[:position] + f'<drawing r:id="{rel_id}"/>' + sheet_xml[position:]
+    return insert_child(_declare_r(sheet_xml), f'<drawing r:id="{rel_id}"/>', _AFTER_DRAWING)
 
 
 def _free_part(parts: dict[str, bytes], pattern: str) -> str:
@@ -250,6 +247,25 @@ def _add_extensions(parts, sheet_paths, sheet_extensions: dict[str, list[dict]],
         parts[sheet_path] = extensions.write_sheet(xml, exts, ids).encode("utf-8")
 
 
+def _add_sheet_xml(parts, sheet_paths, ignored_errors: dict[str, str],
+                   cell_metadata: dict[str, dict[str, int]], metadata: str | None) -> None:
+    for sheet_name in sorted(set(ignored_errors) | set(cell_metadata)):
+        sheet_path = sheet_paths.get(sheet_name)
+        if sheet_path is None:
+            raise ValueError(f"no sheet named {sheet_name!r} for ignored errors or cell metadata")
+        xml = parts[sheet_path].decode("utf-8")
+        if cell_metadata.get(sheet_name):
+            xml = extensions.write_cell_metadata(xml, cell_metadata[sheet_name])
+        if ignored_errors.get(sheet_name):
+            xml = extensions.write_ignored_errors(xml, ignored_errors[sheet_name])
+        parts[sheet_path] = xml.encode("utf-8")
+    if metadata:
+        part = "xl/metadata.xml"
+        parts[part] = metadata.encode("utf-8")
+        _add_sheet_relationship(parts, "xl/workbook.xml", extensions.METADATA_REL, part)
+        _add_override(parts, part, extensions.METADATA_TYPE)
+
+
 def _add_threads(parts, sheet_paths, sheet_threads: dict[str, list[dict]], persons: list[dict]) -> None:
     for sheet_name, records in sorted(sheet_threads.items()):
         if not records:
@@ -273,17 +289,22 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
                   sheet_extensions: dict[str, list[dict]] | None = None,
                   cf_ids: dict[str, dict[str, str]] | None = None,
                   sheet_threads: dict[str, list[dict]] | None = None,
-                  persons: list[dict] | None = None) -> None:
+                  persons: list[dict] | None = None,
+                  ignored_errors: dict[str, str] | None = None,
+                  cell_metadata: dict[str, dict[str, int]] | None = None,
+                  metadata: str | None = None) -> None:
     """Add what openpyxl does not write to a file it saved (in place).
 
     ``printer_settings``: ``{sheet name: bytes}``; ``shapes``: ``{sheet name:
     [shape, ...]}`` as exported (see :mod:`xlsx2txt.shapes`); ``media``: the
     pictures shapes refer to; ``sheet_extensions`` / ``cf_ids``: see
     :mod:`xlsx2txt.extensions`; ``sheet_threads`` / ``persons``: see
-    :mod:`xlsx2txt.threads`.
+    :mod:`xlsx2txt.threads`; ``ignored_errors`` (``{sheet name: XML}``),
+    ``cell_metadata`` (``{sheet name: {cell: cm}}``) and ``metadata`` (the
+    ``xl/metadata.xml`` part): see :mod:`xlsx2txt.extensions`.
     """
-    per_sheet = [shapes, sheet_extensions, cf_ids, sheet_threads]
-    if not printer_settings and not persons and not any(any(m.values()) for m in per_sheet if m):
+    per_sheet = [shapes, sheet_extensions, cf_ids, sheet_threads, ignored_errors, cell_metadata]
+    if not (printer_settings or persons or metadata) and not any(any(m.values()) for m in per_sheet if m):
         return
     path = Path(path)
     with zipfile.ZipFile(path) as source:
@@ -295,6 +316,7 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
     _add_shapes(parts, sheet_paths, drawings, shapes or {}, media or {})
     _add_extensions(parts, sheet_paths, sheet_extensions or {}, cf_ids or {})
     _add_threads(parts, sheet_paths, sheet_threads or {}, persons or [])
+    _add_sheet_xml(parts, sheet_paths, ignored_errors or {}, cell_metadata or {}, metadata)
 
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as target_zip:
         # [Content_Types].xml first, as Office writes it.
@@ -334,7 +356,8 @@ def extract_sheet_extras(path) -> tuple[dict[str, dict], list[dict]]:
     """Extensions, conditional formatting links and threaded comments.
 
     Returns ``({worksheet name: {"extensions": [...], "cfIds": {...},
-    "threadedComments": [...]}}, persons)``.
+    "threadedComments": [...], "ignoredErrors": XML or None, "cellMetadata":
+    {...}}}, persons)``.
     """
     result: dict[str, dict] = {}
     persons: list[dict] = []
@@ -343,20 +366,47 @@ def extract_sheet_extras(path) -> tuple[dict[str, dict], list[dict]]:
         for sheet_name, sheet_path in _sheet_paths(archive).items():
             if sheet_path not in names or not sheet_path.startswith("xl/worksheets/"):
                 continue
-            exts, ids, _ = extensions.read_sheet(archive.read(sheet_path).decode("utf-8"))
+            sheet_xml = archive.read(sheet_path).decode("utf-8")
+            exts, ids, _ = extensions.read_sheet(sheet_xml)
             records = []
             rels_path = get_rels_path(sheet_path)
             if rels_path in names:
                 for rel in get_dependents(archive, rels_path).find(threads.THREAD_REL):
                     if rel.target in names:
                         records.extend(threads.read_threads(archive.read(rel.target).decode("utf-8")))
-            result[sheet_name] = {"extensions": exts, "cfIds": ids, "threadedComments": records}
+            result[sheet_name] = {
+                "extensions": exts,
+                "cfIds": ids,
+                "threadedComments": records,
+                "ignoredErrors": extensions.read_ignored_errors(sheet_xml),
+                "cellMetadata": extensions.read_cell_metadata(sheet_xml),
+            }
         workbook_rels = "xl/_rels/workbook.xml.rels"
         if workbook_rels in names:
             for rel in get_dependents(archive, workbook_rels).find(threads.PERSON_REL):
                 if rel.target in names:
                     persons.extend(threads.read_persons(archive.read(rel.target).decode("utf-8")))
     return result, persons
+
+
+def _keeps_metadata(xml: str) -> bool:
+    """Cell metadata is kept unless it describes values (pictures in cells,
+    rich data types), whose parts are not exported."""
+    return "<valueMetadata" not in xml and ":valueMetadata" not in xml
+
+
+def extract_metadata(path) -> str | None:
+    """The ``xl/metadata.xml`` part (dynamic arrays), if it can be kept."""
+    with zipfile.ZipFile(path) as archive:
+        names = set(archive.namelist())
+        workbook_rels = "xl/_rels/workbook.xml.rels"
+        if workbook_rels not in names:
+            return None
+        for rel in get_dependents(archive, workbook_rels).find(extensions.METADATA_REL):
+            if rel.target in names:
+                xml = archive.read(rel.target).decode("utf-8")
+                return xml if _keeps_metadata(xml) else None
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -383,7 +433,7 @@ _LOST_PARTS = [
     (re.compile(r"^customXml/"), "custom XML parts (e.g. Power Query)"),
     (re.compile(r"^xl/model/"), "data model (Power Pivot)"),
     (re.compile(r"^xl/richData/"), "pictures in cells / rich data types"),
-    (re.compile(r"^xl/metadata\.xml$"), "cell metadata (dynamic array formulas may become legacy arrays)"),
+    (re.compile(r"^xl/metadata\.xml$"), "cell metadata of pictures in cells / rich data types"),
     (re.compile(r"^xl/webextensions/"), "Office add-ins"),
     (re.compile(r"^customUI"), "ribbon customisation"),
 ]
@@ -405,6 +455,8 @@ def unsupported_warnings(path, keep_vba: bool = False) -> list[str]:
         for name in names:
             # Folders and relationship files are covered by the parts they link.
             if name.endswith("/") or name.endswith(".rels") or _KNOWN_PARTS.match(name):
+                continue
+            if name == "xl/metadata.xml" and _keeps_metadata(archive.read(name).decode("utf-8", errors="replace")):
                 continue
             match = next(((pattern, text) for pattern, text in _LOST_PARTS if pattern.match(name)), None)
             if match is None:

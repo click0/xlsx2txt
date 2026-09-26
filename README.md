@@ -37,6 +37,8 @@ Unlike simple text extractors, xlsx2txt preserves everything — formulas, style
 | Shapes (text boxes, arrows, connectors, groups) | ✅ (drawing XML in the sheet file) |
 | Sparklines, extended conditional formatting and data validation (Excel 2010+) | ✅ (`extensions` in the sheet file) |
 | Threaded comments (Excel 365 conversations) | ✅ (`threadedComments` in the sheet file, authors in `workbook.json`) |
+| Dynamic array formulas (FILTER, SORT, UNIQUE…) | ✅ (`cm` on the cell, `data/metadata.xml`) |
+| Switched-off error checks (green triangles) | ✅ (`ignoredErrors` in the sheet file) |
 | Pivot tables | ✅ (definition and cache as indented XML in `data/pivots/`) |
 | Printer driver settings | ✅ (`data/printer/`, restored byte for byte) |
 | External links to other workbooks | ✅ |
@@ -127,7 +129,8 @@ report/
 │   ├── theme/theme1.xml    # Workbook theme (theme colors)
 │   ├── media/              # Images, named by content hash
 │   ├── pivots/             # Pivot tables and their caches (XML)
-│   └── printer/            # Printer driver settings of sheets (binary)
+│   ├── printer/            # Printer driver settings of sheets (binary)
+│   └── metadata.xml        # Cell metadata (dynamic array formulas)
 ├── vba/                    # VBA project (for .xlsm)
 │   ├── xl/vbaProject.bin
 │   └── modules/*.bas       # VBA source code (read-only, needs oletools)
@@ -164,6 +167,10 @@ other sheets) as XML; a conditional formatting rule linked to one has
 `extId`. `threadedComments` has one record per comment or reply: `ref` cell,
 `personId` (see `persons` in `workbook.json`), `dT` date, `text`, `parentId`
 for replies, `done` for resolved threads; `xml` keeps mentions.
+
+A formula cell with `"cm": 1` is a dynamic array formula: it spills over
+`fRef` in Excel 365 (without `cm` it is a legacy `{=...}` array formula).
+`ignoredErrors` keeps, as XML, the error checks switched off on the sheet.
 
 ## Git integration
 

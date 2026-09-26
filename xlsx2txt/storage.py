@@ -11,6 +11,7 @@ Layout::
     data/media/image_<hash>.<ext>  (optional, images)
     data/pivots/*.xml              (optional, pivot tables and their caches)
     data/printer/printer_<hash>.bin (optional, printer driver settings)
+    data/metadata.xml              (optional, cell metadata: dynamic arrays)
     vba/xl/vbaProject.bin          (optional, .xlsm only)
     vba/modules/*.bas|cls|frm      (optional, VBA source code, read-only)
     _verify/checksums.json
@@ -35,6 +36,7 @@ THEME = "data/theme/theme1.xml"
 MEDIA_DIR = "data/media"
 PIVOTS_DIR = "data/pivots"
 PRINTER_DIR = "data/printer"
+METADATA = "data/metadata.xml"
 VBA_DIR = "vba"
 VBA_SOURCES_DIR = "vba/modules"
 CHECKSUMS = "_verify/checksums.json"
@@ -157,6 +159,9 @@ def write_model(model: dict[str, Any], out_dir: str | Path, force: bool = False)
     if model.get("theme"):
         files[THEME] = model["theme"].encode("utf-8")
 
+    if model.get("metadata"):
+        files[METADATA] = model["metadata"].encode("utf-8")
+
     for name, content in sorted((model.get("media") or {}).items()):
         files[f"{MEDIA_DIR}/{name}"] = content
 
@@ -229,6 +234,8 @@ def read_model(in_dir: str | Path) -> dict[str, Any]:
     theme_path = in_dir / THEME
     # Bytes, not read_text(): keep the original line endings of the theme XML.
     theme = theme_path.read_bytes().decode("utf-8") if theme_path.exists() else None
+    metadata_path = in_dir / METADATA
+    metadata = metadata_path.read_bytes().decode("utf-8") if metadata_path.exists() else None
 
     vba = {}
     vba_sources = {}
@@ -275,6 +282,7 @@ def read_model(in_dir: str | Path) -> dict[str, Any]:
         "media": media,
         "pivots": pivots,
         "printerSettings": printer,
+        "metadata": metadata,
     }
 
 

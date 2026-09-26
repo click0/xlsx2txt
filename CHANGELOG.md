@@ -6,6 +6,16 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 
 ## [Unreleased]
 
+### Added
+- Dynamic array formulas (FILTER, SORT, UNIQUE, XLOOKUP spilling over
+  several cells) stay dynamic: the cell metadata (`xl/metadata.xml`, stored as
+  `data/metadata.xml`) and the `cm` mark of the cell are exported and
+  restored. Before, Excel showed them as legacy `{=...}` array formulas after
+  a round-trip. `cat` shows them as "spills over".
+- Error checks switched off on a sheet (`ignoredErrors`, e.g. "number stored
+  as text") are kept. They were lost before without a warning.
+- Example `09-extensions` shows both.
+
 ## [0.6.0] - 2026-09-26
 
 ### Added

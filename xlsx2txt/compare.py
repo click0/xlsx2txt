@@ -192,6 +192,8 @@ def diff_models(a: dict[str, Any], b: dict[str, Any], ignore_cached: bool = Fals
 
     if (a.get("theme") or None) != (b.get("theme") or None):
         out.append("theme: changed")
+    if (a.get("metadata") or None) != (b.get("metadata") or None):
+        out.append("metadata.xml: changed")
 
     media_a = a.get("media") or {}
     media_b = b.get("media") or {}

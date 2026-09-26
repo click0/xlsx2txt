@@ -503,9 +503,24 @@ LEGACY_NOTE = (
 )
 
 
+# Cell metadata as Excel writes it for dynamic array formulas.
+DYNAMIC_ARRAY_METADATA = (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+    '<metadata xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+    'xmlns:xda="http://schemas.microsoft.com/office/spreadsheetml/2017/dynamicarray">'
+    '<metadataTypes count="1"><metadataType name="XLDAPR" minSupportedVersion="120000" copy="1" pasteAll="1" '
+    'pasteValues="1" merge="1" splitFirst="1" rowColShift="1" clearFormats="1" clearComments="1" assign="1" '
+    'coerce="1" cellMeta="1"/></metadataTypes><futureMetadata name="XLDAPR" count="1"><bk><extLst>'
+    '<ext uri="{bdbb8cdc-fa1e-496e-a857-3c3f30c029c3}"><xda:dynamicArrayProperties fDynamic="1" fCollapsed="0"/>'
+    '</ext></extLst></bk></futureMetadata><cellMetadata count="1"><bk><rc t="1" v="0"/></bk></cellMetadata>'
+    '</metadata>'
+)
+
+
 def extensions() -> tuple[Workbook, dict]:
     """Sparklines, a data bar with extended options, a drop-down list from
-    another sheet and a threaded comment with a reply."""
+    another sheet, a threaded comment with a reply, a dynamic array formula
+    and a switched-off error check."""
     wb = _new_workbook("Extensions")
     ws = wb.active
     ws.title = "Sales"
@@ -520,6 +535,12 @@ def extensions() -> tuple[Workbook, dict]:
         ws.column_dimensions[column].width = width
     ws.conditional_formatting.add("F2:F5", DataBarRule(start_type="min", end_type="max", color="FF638EC6"))
     ws["A3"].comment = Comment(LEGACY_NOTE, f"tc={THREAD_ID}")
+    ws["J1"], ws["K1"] = "Sorted", "Code"
+    ws["J2"] = ArrayFormula("J2:J5", "=_xlfn._xlws.SORT(A2:A5)")
+    for row, region in enumerate(sorted(["North", "South", "East", "West"]), start=2):
+        if row > 2:
+            ws[f"J{row}"] = region  # the spilled values Excel stores
+    ws["K2"] = "0042"  # a number stored as text; its error check is switched off
     lists = wb.create_sheet("Lists")
     for value in ("Open", "In progress", "Done"):
         lists.append([value])
@@ -528,6 +549,9 @@ def extensions() -> tuple[Workbook, dict]:
         "cf_ids": {"Sales": {"F2:F5#1": DATA_BAR_ID}},
         "sheet_threads": {"Sales": THREADS},
         "persons": PERSONS,
+        "cell_metadata": {"Sales": {"J2": 1}},
+        "metadata": DYNAMIC_ARRAY_METADATA,
+        "ignored_errors": {"Sales": '<ignoredErrors><ignoredError sqref="K2" numberStoredAsText="1"/></ignoredErrors>'},
     }
 
 
