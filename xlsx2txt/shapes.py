@@ -16,13 +16,11 @@ import re
 from typing import Any, Callable
 
 from xlsx2txt.drawings import media_name
+from xlsx2txt.xmlfrag import self_contained as _self_contained
+from xlsx2txt.xmlfrag import split_children as drawing_children
 
 REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
-# Tags of the drawing XML (comments and processing instructions included so
-# they can be skipped when tracking nesting).
-_TAG = re.compile(r"<!--.*?-->|<\?.*?\?>|<!\[CDATA\[.*?\]\]>|<(/?)([\w.:-]+)((?:[^>\"']|\"[^\"]*\"|'[^']*')*?)(/?)>",
-                  re.S)
 _ANCHORS = {"twoCellAnchor", "oneCellAnchor", "absoluteAnchor", "AlternateContent"}
 # The first graphic object in an anchor decides what it is.
 _OBJECT = re.compile(r"<(?:\w+:)?(sp|grpSp|cxnSp|pic|graphicFrame|contentPart)\b")
@@ -31,41 +29,12 @@ _SHAPE_KINDS = {"sp", "grpSp", "cxnSp"}
 _UNSUPPORTED = re.compile(r"\br:pict=|compatExt")
 # References to relationships of the drawing (picture fills, hyperlinks).
 _REL_ATTR = re.compile(r"\br:(embed|link|id)=\"([^\"]*)\"")
-_XMLNS = re.compile(r"\bxmlns(?::([\w.-]+))?=(\"[^\"]*\"|'[^']*')")
 _ID_TAG = re.compile(r"<(?:\w+:)?(cNvPr|stCxn|endCxn)\b[^>]*>")
 _ID_ATTR = re.compile(r"\bid=\"(\d+)\"")
 
 
 def _local(name: str) -> str:
     return name.rsplit(":", 1)[-1]
-
-
-def drawing_children(xml: str) -> tuple[str, list[str]]:
-    """Split a drawing into its root start tag and its top-level elements."""
-    depth = 0
-    root = ""
-    start = None
-    children = []
-    for match in _TAG.finditer(xml):
-        closing, name, _, self_closing = match.groups()
-        if name is None:
-            continue
-        if closing:
-            depth -= 1
-            if depth == 1 and start is not None:
-                children.append(xml[start:match.end()])
-                start = None
-        else:
-            if depth == 0:
-                root = match.group(0)
-            elif depth == 1:
-                start = match.start()
-                if self_closing:
-                    children.append(match.group(0))
-                    start = None
-            if not self_closing:
-                depth += 1
-    return root, children
 
 
 def classify(fragment: str) -> str | None:
@@ -118,24 +87,6 @@ def _shape_rels(fragment: str, rels: dict, read: Callable[[str], bytes],
         else:
             return None
     return result
-
-
-def _self_contained(fragment: str, root: str) -> str:
-    """Declare on the fragment the namespaces it inherits from the drawing root."""
-    first_tag = re.match(r"<[^>]*?(?=/?>)", fragment).group(0)
-    declared = {prefix or "" for prefix, _ in _XMLNS.findall(first_tag)}
-    used = set(re.findall(r"</?([\w.-]+):", fragment))
-    used |= set(re.findall(r"\s([\w.-]+):[\w.-]+=", fragment)) - {"xmlns"}
-    for value in re.findall(r"\bIgnorable=\"([^\"]*)\"", fragment):
-        used |= set(value.split())
-    if re.search(r"<(?![\w.-]+:)[\w.-]+[\s/>]", fragment):
-        used.add("")
-    additions = [
-        f" xmlns:{prefix}={value}" if prefix else f" xmlns={value}"
-        for prefix, value in _XMLNS.findall(root)
-        if (prefix or "") in used - declared
-    ]
-    return first_tag + "".join(additions) + fragment[len(first_tag):]
 
 
 def _text(fragment: str) -> str:

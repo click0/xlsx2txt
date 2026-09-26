@@ -15,7 +15,14 @@ from openpyxl.worksheet.formula import ArrayFormula, DataTableFormula
 from openpyxl.xml.functions import tostring
 
 from xlsx2txt import __version__
-from xlsx2txt.package import extract_printer_settings, extract_shapes, printer_settings_name, unsupported_warnings
+from xlsx2txt.extensions import cf_key
+from xlsx2txt.package import (
+    extract_printer_settings,
+    extract_sheet_extras,
+    extract_shapes,
+    printer_settings_name,
+    unsupported_warnings,
+)
 from xlsx2txt.pivots import export_pivots
 from xlsx2txt.drawings import anchor_to_json, chart_to_json, extract_images, media_name
 from xlsx2txt.styles import StyleTable, color_to_json, dxf_to_json, rich_text_to_json
@@ -412,7 +419,12 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
     with _warnings.catch_warnings():
         _warnings.simplefilter("ignore")
         wb_values = load_workbook(BytesIO(content), data_only=True) if cached_values else None
-    openpyxl_warnings = list(dict.fromkeys(f"openpyxl: {w.message}" for w in caught))
+    # Worksheet extensions are kept by xlsx2txt; the ones that are not are
+    # reported by unsupported_warnings().
+    openpyxl_warnings = list(dict.fromkeys(
+        f"openpyxl: {w.message}" for w in caught
+        if "extension is not supported and will be removed" not in str(w.message)
+    ))
 
     styles = StyleTable()
     # Index 0 is the default style of the workbook.
@@ -425,6 +437,7 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
     warnings.extend(openpyxl_warnings)
     printer = extract_printer_settings(path)
     shapes, shape_media = extract_shapes(path)
+    sheet_extras, persons = extract_sheet_extras(path)
     printer_files: dict[str, bytes] = {}
     media: dict[str, bytes] = dict(shape_media)
     pivots = export_pivots(wb.worksheets)
@@ -446,6 +459,17 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
             sheet["shapes"] = shapes[ws.title]
         if ws.title in pivots["sheets"]:
             sheet["pivotTables"] = pivots["sheets"][ws.title]
+        extras = sheet_extras.get(ws.title, {})
+        cf_ids = extras.get("cfIds") or {}
+        for block in sheet.get("conditionalFormatting", []):
+            for rule in block["rules"]:
+                ext_id = cf_ids.get(cf_key(block["range"], rule.get("priority", 0)))
+                if ext_id:
+                    rule["extId"] = ext_id
+        if extras.get("extensions"):
+            sheet["extensions"] = extras["extensions"]
+        if extras.get("threadedComments"):
+            sheet["threadedComments"] = extras["threadedComments"]
         # Keep cells last: they are the largest part of the file.
         if ws.title in printer:
             name = printer_settings_name(printer[ws.title])
@@ -461,6 +485,8 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
         "properties": pick_attrs(wb.properties, PROPERTY_ATTRS),
         "definedNames": _export_defined_names(wb.defined_names.values()),
     }
+    if persons:
+        workbook["persons"] = persons
     custom = _export_custom_properties(wb)
     if custom:
         workbook["customProperties"] = custom

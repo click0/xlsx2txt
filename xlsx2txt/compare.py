@@ -99,17 +99,49 @@ def _diff_shapes(prefix: str, shapes_a: list, shapes_b: list, out: list[str]) ->
             out.append(f"{prefix} shape {shapes_b[j].get('name', j + 1)!r}: added")
 
 
+def _diff_threads(prefix: str, threads_a: list, threads_b: list, out: list[str]) -> None:
+    by_id_a = {t.get("id"): t for t in threads_a}
+    by_id_b = {t.get("id"): t for t in threads_b}
+    for key in list(by_id_a) + [k for k in by_id_b if k not in by_id_a]:
+        a, b = by_id_a.get(key), by_id_b.get(key)
+        label = f"{prefix} comment at {(a or b).get('ref')} {key}"
+        if b is None:
+            out.append(f"{label}: removed")
+        elif a is None:
+            out.append(f"{label}: added {_fmt(b.get('text'))}")
+        elif a.get("text") != b.get("text"):
+            out.append(f"{label}: {_fmt(a.get('text'))} -> {_fmt(b.get('text'))}")
+        elif a != b:
+            _diff_values(label, {k: v for k, v in a.items() if k != "text"},
+                         {k: v for k, v in b.items() if k != "text"}, out)
+
+
+def _diff_extensions(prefix: str, exts_a: list, exts_b: list, out: list[str]) -> None:
+    for i in range(max(len(exts_a), len(exts_b))):
+        a = exts_a[i] if i < len(exts_a) else None
+        b = exts_b[i] if i < len(exts_b) else None
+        label = f"{prefix} extension {(a or b).get('type')!r}"
+        if b is None:
+            out.append(f"{label}: removed")
+        elif a is None:
+            out.append(f"{label}: added")
+        elif a != b:
+            out.append(f"{label}: changed")
+
+
 def _diff_sheet(name: str, a: dict[str, Any], b: dict[str, Any],
                 styles_a: dict[str, Any], styles_b: dict[str, Any],
                 ignore_cached: bool, out: list[str]) -> None:
     prefix = f"[{name}]"
-    skip = {"cells", "dimensions", "name", "shapes"}
+    skip = {"cells", "dimensions", "name", "shapes", "extensions", "threadedComments"}
     for key in list(a) + [k for k in b if k not in a]:
         if key in skip:
             continue
         _diff_values(f"{prefix} {key}", a.get(key), b.get(key), out)
 
     _diff_shapes(prefix, a.get("shapes", []), b.get("shapes", []), out)
+    _diff_threads(prefix, a.get("threadedComments", []), b.get("threadedComments", []), out)
+    _diff_extensions(prefix, a.get("extensions", []), b.get("extensions", []), out)
 
     _diff_values(
         f"{prefix} dimensions",
@@ -233,6 +265,11 @@ def validate_model(model: dict[str, Any]) -> list[str]:
             for name in names:
                 if name not in pivots:
                     errors.append(f"[{sheet.get('name')}] pivot file not found: data/pivots/{name}")
+        person_ids = {p.get("id") for p in model.get("workbook", {}).get("persons") or []}
+        for record in sheet.get("threadedComments", []):
+            if record.get("personId") not in person_ids:
+                errors.append(f"[{sheet.get('name')}] comment {record.get('id')}: unknown person "
+                              f"{record.get('personId')!r} (workbook.persons)")
         for number, shape in enumerate(sheet.get("shapes", []), start=1):
             if not isinstance(shape.get("xml"), str) or not shape["xml"].startswith("<"):
                 errors.append(f"[{sheet.get('name')}] shape {number}: no XML")

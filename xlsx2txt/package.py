@@ -4,6 +4,9 @@
   archive and written back into the saved file.
 - Shapes are read from the drawings and written back into them
   (see :mod:`xlsx2txt.shapes`).
+- Worksheet extensions (sparklines, extended conditional formatting and data
+  validation, see :mod:`xlsx2txt.extensions`) and threaded comments (see
+  :mod:`xlsx2txt.threads`) are read from the parts and written back.
 - Parts and sheet features that openpyxl drops are detected so that export
   can warn about them instead of losing them silently.
 """
@@ -19,6 +22,7 @@ from pathlib import Path
 from openpyxl.packaging.relationship import get_dependents, get_rels_path
 from openpyxl.reader.workbook import WorkbookParser
 
+from xlsx2txt import extensions, threads
 from xlsx2txt.shapes import (
     EMPTY_DRAWING,
     add_to_drawing,
@@ -232,15 +236,54 @@ def _add_shapes(parts, sheet_paths, drawings, shapes: dict[str, list[dict]],
         parts[part] = add_to_drawing(parts[part].decode("utf-8"), placed).encode("utf-8")
 
 
+def _add_extensions(parts, sheet_paths, sheet_extensions: dict[str, list[dict]],
+                    cf_ids: dict[str, dict[str, str]]) -> None:
+    for sheet_name in sorted(set(sheet_extensions) | set(cf_ids)):
+        exts = sheet_extensions.get(sheet_name) or []
+        ids = cf_ids.get(sheet_name) or {}
+        if not exts and not ids:
+            continue
+        sheet_path = sheet_paths.get(sheet_name)
+        if sheet_path is None:
+            raise ValueError(f"no sheet named {sheet_name!r} for extensions")
+        xml = parts[sheet_path].decode("utf-8")
+        parts[sheet_path] = extensions.write_sheet(xml, exts, ids).encode("utf-8")
+
+
+def _add_threads(parts, sheet_paths, sheet_threads: dict[str, list[dict]], persons: list[dict]) -> None:
+    for sheet_name, records in sorted(sheet_threads.items()):
+        if not records:
+            continue
+        sheet_path = sheet_paths.get(sheet_name)
+        if sheet_path is None:
+            raise ValueError(f"no sheet named {sheet_name!r} for threaded comments")
+        part = _free_part(parts, "xl/threadedComments/threadedComment{}.xml")
+        parts[part] = threads.write_threads(records).encode("utf-8")
+        _add_sheet_relationship(parts, sheet_path, threads.THREAD_REL, part)
+        _add_override(parts, part, threads.THREAD_TYPE)
+    if persons:
+        part = "xl/persons/person.xml"
+        parts[part] = threads.write_persons(persons).encode("utf-8")
+        _add_sheet_relationship(parts, "xl/workbook.xml", threads.PERSON_REL, part)
+        _add_override(parts, part, threads.PERSON_TYPE)
+
+
 def patch_package(path, printer_settings: dict[str, bytes] | None = None,
-                  shapes: dict[str, list[dict]] | None = None, media: dict[str, bytes] | None = None) -> None:
-    """Add printer settings and shapes to a file saved by openpyxl (in place).
+                  shapes: dict[str, list[dict]] | None = None, media: dict[str, bytes] | None = None,
+                  sheet_extensions: dict[str, list[dict]] | None = None,
+                  cf_ids: dict[str, dict[str, str]] | None = None,
+                  sheet_threads: dict[str, list[dict]] | None = None,
+                  persons: list[dict] | None = None) -> None:
+    """Add what openpyxl does not write to a file it saved (in place).
 
     ``printer_settings``: ``{sheet name: bytes}``; ``shapes``: ``{sheet name:
     [shape, ...]}`` as exported (see :mod:`xlsx2txt.shapes`); ``media``: the
-    pictures shapes refer to.
+    pictures shapes refer to; ``sheet_extensions`` / ``cf_ids``: see
+    :mod:`xlsx2txt.extensions`; ``sheet_threads`` / ``persons``: see
+    :mod:`xlsx2txt.threads`.
     """
-    if not printer_settings and not any((shapes or {}).values()):
+    per_sheet = [shapes, sheet_extensions, cf_ids, sheet_threads]
+    if not printer_settings and not persons and not any(any(m.values()) for m in per_sheet if m):
         return
     path = Path(path)
     with zipfile.ZipFile(path) as source:
@@ -250,6 +293,8 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
 
     _add_printer_settings(parts, sheet_paths, printer_settings or {})
     _add_shapes(parts, sheet_paths, drawings, shapes or {}, media or {})
+    _add_extensions(parts, sheet_paths, sheet_extensions or {}, cf_ids or {})
+    _add_threads(parts, sheet_paths, sheet_threads or {}, persons or [])
 
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as target_zip:
         # [Content_Types].xml first, as Office writes it.
@@ -285,6 +330,35 @@ def extract_shapes(path) -> tuple[dict[str, list[dict]], dict[str, bytes]]:
     return result, media
 
 
+def extract_sheet_extras(path) -> tuple[dict[str, dict], list[dict]]:
+    """Extensions, conditional formatting links and threaded comments.
+
+    Returns ``({worksheet name: {"extensions": [...], "cfIds": {...},
+    "threadedComments": [...]}}, persons)``.
+    """
+    result: dict[str, dict] = {}
+    persons: list[dict] = []
+    with zipfile.ZipFile(path) as archive:
+        names = set(archive.namelist())
+        for sheet_name, sheet_path in _sheet_paths(archive).items():
+            if sheet_path not in names or not sheet_path.startswith("xl/worksheets/"):
+                continue
+            exts, ids, _ = extensions.read_sheet(archive.read(sheet_path).decode("utf-8"))
+            records = []
+            rels_path = get_rels_path(sheet_path)
+            if rels_path in names:
+                for rel in get_dependents(archive, rels_path).find(threads.THREAD_REL):
+                    if rel.target in names:
+                        records.extend(threads.read_threads(archive.read(rel.target).decode("utf-8")))
+            result[sheet_name] = {"extensions": exts, "cfIds": ids, "threadedComments": records}
+        workbook_rels = "xl/_rels/workbook.xml.rels"
+        if workbook_rels in names:
+            for rel in get_dependents(archive, workbook_rels).find(threads.PERSON_REL):
+                if rel.target in names:
+                    persons.extend(threads.read_persons(archive.read(rel.target).decode("utf-8")))
+    return result, persons
+
+
 # ---------------------------------------------------------------------------
 # Parts and features that are not exported
 # ---------------------------------------------------------------------------
@@ -295,13 +369,12 @@ _KNOWN_PARTS = re.compile(
     r"|xl/(workbook\.xml|_rels/workbook\.xml\.rels|styles\.xml|sharedStrings\.xml|calcChain\.xml"
     r"|theme/.*|worksheets/.*|chartsheets/.*|drawings/.*|comments\d*\.xml|comments/.*|media/.*|charts/.*"
     r"|tables/.*|pivotTables/.*|pivotCache/.*|externalLinks/.*|printerSettings/.*"
+    r"|threadedComments/.*|persons/.*"
     r"|vbaProject\.bin|vbaProjectSignature.*\.bin|_rels/vbaProject\.bin\.rels))$"
 )
 
 # Recognised groups of parts that are lost, with a readable description.
 _LOST_PARTS = [
-    (re.compile(r"^xl/threadedComments/"), "threaded comments (kept only as plain notes)"),
-    (re.compile(r"^xl/persons/"), None),  # authors of threaded comments, reported with them
     (re.compile(r"^xl/(slicers|slicerCaches)/"), "slicers"),
     (re.compile(r"^xl/timelines?|^xl/timelineCaches/"), "timelines"),
     (re.compile(r"^xl/(ctrlProps|activeX)/"), "form controls / ActiveX controls"),
@@ -315,13 +388,6 @@ _LOST_PARTS = [
     (re.compile(r"^customUI"), "ribbon customisation"),
 ]
 
-# Sheet XML fragments of features openpyxl drops.
-_SHEET_FEATURES = [
-    (re.compile(r"<(\w+:)?sparklineGroups?\b"), "sparklines"),
-    (re.compile(r"<x14:conditionalFormattings\b"), "extended conditional formatting (e.g. icon/data bar options)"),
-    (re.compile(r"<x14:dataValidations\b"), "extended data validation (lists from other sheets)"),
-    (re.compile(r"<(\w+:)?slicerList\b"), "slicers"),
-]
 _SMART_ART = re.compile(r"drawingml/2006/diagram")
 
 
@@ -356,9 +422,8 @@ def unsupported_warnings(path, keep_vba: bool = False) -> list[str]:
             if sheet_path not in names:
                 continue
             xml = archive.read(sheet_path).decode("utf-8", errors="replace")
-            for pattern, description in _SHEET_FEATURES:
-                if pattern.search(xml):
-                    warnings.append(f"Sheet '{sheet_name}': {description} are not exported")
+            for description in sorted(set(extensions.read_sheet(xml)[2])):
+                warnings.append(f"Sheet '{sheet_name}': {description} are not exported")
             shapes = 0
             smart_art = False
             is_worksheet = sheet_path.startswith("xl/worksheets/")

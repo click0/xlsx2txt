@@ -6,6 +6,25 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-26
+
+### Added
+- Sparklines, extended conditional formatting (e.g. data bars with negative
+  values and an axis, custom icon sets) and extended data validation
+  (drop-down lists from other sheets) — the Excel 2010+ extensions of a sheet
+  — are exported (`extensions`) and restored, including the link between a
+  conditional formatting rule and its extended options (`extId`).
+- Threaded comments (Excel 365 conversations): every comment and reply with
+  its cell, author, date, text, resolved state and mentions is exported
+  (`threadedComments`, authors in `workbook.persons`) and restored; `cat`
+  shows the conversations and `diff` the changed comments.
+- Example `09-extensions`.
+
+### Changed
+- openpyxl's "extension is not supported and will be removed" notes are no
+  longer copied into the warnings: extensions are kept now, and the ones that
+  are not (slicers, timelines) get their own warning.
+
 ## [0.5.0] - 2026-09-26
 
 ### Added
@@ -103,7 +122,8 @@ First working version.
   checksums in `_verify/`.
 - Releases from the GitHub web interface.
 
-[Unreleased]: https://github.com/click0/xlsx2txt/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/click0/xlsx2txt/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/click0/xlsx2txt/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/click0/xlsx2txt/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/click0/xlsx2txt/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/click0/xlsx2txt/compare/v0.2.0...v0.3.0

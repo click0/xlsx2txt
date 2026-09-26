@@ -437,7 +437,7 @@ SHAPES = {
 }
 
 
-def shapes() -> tuple[Workbook, dict, dict]:
+def shapes() -> tuple[Workbook, dict]:
     """Text box, shapes with text, a connector arrow, a group, a shape behind a
     picture, a shape with a hyperlink and one filled with a picture."""
     wb = _new_workbook("Shapes")
@@ -446,7 +446,89 @@ def shapes() -> tuple[Workbook, dict, dict]:
     ws["A1"] = "Process"
     ws.add_image(Image(io.BytesIO(_png((48, 84, 150), (48, 48)))), "A3")
     wb.create_sheet("Notes")["A1"] = "See the note"
-    return wb, SHAPES, {"fill.png": _png((237, 125, 49), (16, 16))}
+    return wb, {"shapes": SHAPES, "media": {"fill.png": _png((237, 125, 49), (16, 16))}}
+
+
+# ---------------------------------------------------------------------------
+# Worksheet extensions and threaded comments, as Excel writes them.
+# ---------------------------------------------------------------------------
+
+X14 = 'xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"'
+XM = 'xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main"'
+DATA_BAR_ID = "{9F0C2E1A-5B7D-4C3E-8A21-6D4F0B9E7C15}"
+SPARKLINE_COLORS = "".join(
+    f'<x14:{name} rgb="{rgb}"/>' for name, rgb in [
+        ("colorSeries", "FF376092"), ("colorNegative", "FFD00000"), ("colorAxis", "FF000000"),
+        ("colorMarkers", "FFD00000"), ("colorFirst", "FFD00000"), ("colorLast", "FFD00000"),
+        ("colorHigh", "FFD00000"), ("colorLow", "FFD00000"),
+    ]
+)
+EXTENSIONS = [
+    {"type": "conditional formatting", "xml": (
+        f'<ext uri="{{78C0D931-6437-407d-A8EE-F0AAD7539E65}}" {X14}><x14:conditionalFormattings>'
+        f'<x14:conditionalFormatting {XM}><x14:cfRule type="dataBar" id="{DATA_BAR_ID}">'
+        '<x14:dataBar minLength="0" maxLength="100" gradient="0" negativeBarColorSameAsPositive="0" '
+        'axisPosition="middle"><x14:cfvo type="autoMin"/><x14:cfvo type="autoMax"/>'
+        '<x14:negativeFillColor rgb="FFFF0000"/><x14:axisColor rgb="FF000000"/></x14:dataBar></x14:cfRule>'
+        '<xm:sqref>F2:F5</xm:sqref></x14:conditionalFormatting></x14:conditionalFormattings></ext>')},
+    {"type": "data validation", "xml": (
+        f'<ext uri="{{CCE6A557-97BC-4b89-ADB6-D9C93CAAB3DF}}" {X14}><x14:dataValidations count="1" {XM}>'
+        '<x14:dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1">'
+        '<x14:formula1><xm:f>Lists!$A$1:$A$3</xm:f></x14:formula1><xm:sqref>H2:H5</xm:sqref>'
+        '</x14:dataValidation></x14:dataValidations></ext>')},
+    {"type": "sparklines", "xml": (
+        f'<ext uri="{{05C60535-1F16-4fd2-B633-F4F36F0B64E0}}" {X14}><x14:sparklineGroups {XM}>'
+        f'<x14:sparklineGroup lineWeight="1.5" displayEmptyCellsAs="gap" markers="1">{SPARKLINE_COLORS}<x14:sparklines>'
+        + "".join(f"<x14:sparkline><xm:f>Sales!B{row}:E{row}</xm:f><xm:sqref>G{row}</xm:sqref></x14:sparkline>"
+                  for row in range(2, 6))
+        + '</x14:sparklines></x14:sparklineGroup></x14:sparklineGroups></ext>')},
+]
+PERSONS = [
+    {"displayName": "Olena Koval", "id": "{4B1E7C2A-0D3F-4A5B-9C6D-7E8F9A0B1C2D}",
+     "userId": "olena@example.com", "providerId": "None"},
+    {"displayName": "Taras Melnyk", "id": "{5C2F8D3B-1E4A-4B6C-8D7E-9F0A1B2C3D4E}",
+     "userId": "taras@example.com", "providerId": "None"},
+]
+THREAD_ID = "{6D3A9E4C-2F5B-4C7D-9E8F-0A1B2C3D4E5F}"
+THREADS = [
+    {"ref": "A3", "id": THREAD_ID, "personId": PERSONS[0]["id"], "dT": "2026-01-01T12:00:00.00",
+     "text": "Is Q4 final?"},
+    {"ref": "A3", "id": "{7E4B0F5D-3A6C-4D8E-8F9A-1B2C3D4E5F60}", "parentId": THREAD_ID,
+     "personId": PERSONS[1]["id"], "dT": "2026-01-02T09:30:00.00", "text": "Yes, checked twice."},
+]
+LEGACY_NOTE = (
+    "[Threaded comment]\n\nYour version of Excel allows you to read this threaded comment; however, any edits "
+    "to it will get removed if the file is opened in a newer version of Excel. Learn more: "
+    "https://go.microsoft.com/fwlink/?linkid=870924\n\nComment:\n    Is Q4 final?\nReply:\n    Yes, checked twice."
+)
+
+
+def extensions() -> tuple[Workbook, dict]:
+    """Sparklines, a data bar with extended options, a drop-down list from
+    another sheet and a threaded comment with a reply."""
+    wb = _new_workbook("Extensions")
+    ws = wb.active
+    ws.title = "Sales"
+    _header(ws, ["Region", "Q1", "Q2", "Q3", "Q4", "Change", "Trend", "Status"])
+    for row, (region, *quarters) in enumerate([
+        ("North", 120, 135, 128, 160), ("South", 90, 85, 70, 65),
+        ("East", 60, 75, 95, 110), ("West", 140, 120, 150, 145),
+    ], start=2):
+        ws.append([region, *quarters, None, None, "Open"])
+        ws[f"F{row}"] = f"=E{row}-B{row}"
+    for column, width in zip("ABCDEFGH", (12, 8, 8, 8, 8, 10, 16, 12)):
+        ws.column_dimensions[column].width = width
+    ws.conditional_formatting.add("F2:F5", DataBarRule(start_type="min", end_type="max", color="FF638EC6"))
+    ws["A3"].comment = Comment(LEGACY_NOTE, f"tc={THREAD_ID}")
+    lists = wb.create_sheet("Lists")
+    for value in ("Open", "In progress", "Done"):
+        lists.append([value])
+    return wb, {
+        "sheet_extensions": {"Sales": EXTENSIONS},
+        "cf_ids": {"Sales": {"F2:F5#1": DATA_BAR_ID}},
+        "sheet_threads": {"Sales": THREADS},
+        "persons": PERSONS,
+    }
 
 
 EXAMPLES = {
@@ -458,6 +540,7 @@ EXAMPLES = {
     "06-workbook-features": workbook_features,
     "07-pivot-table": pivot_table,
     "08-shapes": shapes,
+    "09-extensions": extensions,
 }
 
 
@@ -468,13 +551,13 @@ EXAMPLES = {
 _MODIFIED = re.compile(rb"<dcterms:modified([^>]*)>[^<]*</dcterms:modified>")
 
 
-def save_deterministic(wb: Workbook, path: Path, shapes: dict | None = None, media: dict | None = None) -> None:
+def save_deterministic(wb: Workbook, path: Path, patches: dict | None = None) -> None:
     """Save reproducibly: openpyxl stamps the document and zip entries with 'now'."""
     from xlsx2txt.package import patch_package
 
     wb.save(path)
-    if shapes:
-        patch_package(path, shapes=shapes, media=media)
+    if patches:
+        patch_package(path, **patches)
     buffer = io.BytesIO(path.read_bytes())
     stamp = FIXED_DATE.strftime("%Y-%m-%dT%H:%M:%SZ").encode()
     source = zipfile.ZipFile(io.BytesIO(buffer.getvalue()))
@@ -497,8 +580,10 @@ def generate(target_dir: Path = EXAMPLES_DIR, export: bool = True) -> list:
     for name, build in EXAMPLES.items():
         path = target_dir / f"{name}.xlsx"
         built = build()
-        wb, shapes, media = built if isinstance(built, tuple) else (built, None, None)
-        save_deterministic(wb, path, shapes, media)
+        # Builders return the workbook, or the workbook and what to add to the
+        # saved file that openpyxl cannot write (see xlsx2txt.package.patch_package).
+        wb, patches = built if isinstance(built, tuple) else (built, None)
+        save_deterministic(wb, path, patches)
         written.append(path)
         if export:
             export_xlsx(path, target_dir / name, force=True)
