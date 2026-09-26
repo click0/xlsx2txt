@@ -1,5 +1,7 @@
 # xlsx2txt
 
+[Українською](https://github.com/click0/xlsx2txt/blob/main/README_UK.md)
+
 **Bidirectional converter between Excel (.xlsx/.xlsm) and text-based JSON format with full round-trip support.**
 
 Unlike simple text extractors, xlsx2txt preserves everything — formulas, styles, merged cells, VBA macros — and can fully restore the original Excel file.
@@ -44,7 +46,7 @@ Install it from GitHub:
 
 ```bash
 # latest release (replace the version with the one you need)
-pip install https://github.com/click0/xlsx2txt/releases/download/v0.4.0/xlsx2txt-0.4.0-py3-none-any.whl
+pip install https://github.com/click0/xlsx2txt/releases/download/v0.5.0/xlsx2txt-0.5.0-py3-none-any.whl
 
 # or the current main branch
 pip install git+https://github.com/click0/xlsx2txt.git
@@ -79,8 +81,8 @@ xlsx2txt info report.xlsx
 
 ## Examples
 
-The [`examples/`](examples/) directory contains small workbooks for every group of
-features together with their exports, e.g. [`examples/02-styles/`](examples/02-styles/).
+The [`examples/`](https://github.com/click0/xlsx2txt/tree/main/examples/) directory contains small workbooks for every group of
+features together with their exports, e.g. [`examples/02-styles/`](https://github.com/click0/xlsx2txt/tree/main/examples/02-styles/).
 
 ## Commands
 
@@ -150,7 +152,9 @@ value calculated by Excel; it is informational and ignored on import.
 
 Shapes are listed in the sheet file under `shapes`: `name` and `text` are a
 preview for diffs, `xml` is the shape as Excel stores it and is what import
-uses — edit the text inside `xml`.
+uses — edit the text inside `xml`. `rels` holds what the shape links to (a
+hyperlink target, or a picture fill stored in `data/media/`), `layer` the
+number of pictures and charts drawn below it (absent when it is on top).
 
 ## Git integration
 
@@ -172,8 +176,7 @@ git config diff.xlsx.textconv "xlsx2txt cat"
 
 ## Limitations
 
-- Not exported: SmartArt, shapes filled with a picture or carrying a
-  hyperlink, threaded comments (kept as plain notes),
+- Not exported: SmartArt, threaded comments (kept as plain notes),
   sparklines, slicers and timelines, form and ActiveX controls, embedded OLE
   objects, data connections and Power Query, the data model, pictures in
   cells. `export` and `info` warn about each of them (and about any other
@@ -186,7 +189,8 @@ git config diff.xlsx.textconv "xlsx2txt cat"
   column with width 0 comes back with the default width (it stays hidden).
 - Charts are stored as chart XML as understood by openpyxl; exotic chart
   features that openpyxl does not support may be lost.
-- Restored shapes are drawn above the pictures and charts of the sheet.
+- The drawing order of shapes relative to pictures and charts is kept; pictures
+  and charts among themselves are restored charts first.
 - Formula results are not recalculated; Excel recalculates them when the
   restored file is opened.
 
@@ -195,7 +199,7 @@ git config diff.xlsx.textconv "xlsx2txt cat"
 Releases are made from the GitHub web UI (workflow `.github/workflows/release.yml`):
 
 1. Bump `__version__` in `xlsx2txt/__init__.py` (the package version is read from it), describe the
-   version in [CHANGELOG.md](CHANGELOG.md) and [CHANGELOG_UK.md](CHANGELOG_UK.md) (section
+   version in [CHANGELOG.md](https://github.com/click0/xlsx2txt/blob/main/CHANGELOG.md) and [CHANGELOG_UK.md](https://github.com/click0/xlsx2txt/blob/main/CHANGELOG_UK.md) (section
    `## [X.Y.Z] - date`) and merge to `main`. That section becomes the release description.
 2. Either
    - **Actions → release → Run workflow**, enter the version (e.g. `0.1.0`); the workflow runs the tests,
@@ -203,9 +207,13 @@ Releases are made from the GitHub web UI (workflow `.github/workflows/release.ym
    - **Releases → Draft a new release**, create tag `v0.1.0`, press **Publish**; the workflow runs the tests
      and attaches the built files to that release. Leave the description empty (or use
      "Generate release notes"): it is replaced by the changelog text; a description typed by hand is kept.
-3. Optional PyPI publishing: add a [trusted publisher](https://docs.pypi.org/trusted-publishers/) on PyPI
-   (workflow `release.yml`, environment `pypi`), then tick **pypi** when running the workflow, or set the
-   repository variable `PUBLISH_TO_PYPI=true` for releases created in the Releases page.
+3. Optional PyPI publishing (no tokens needed, [trusted publishing](https://docs.pypi.org/trusted-publishers/)):
+   - on pypi.org: **Your projects → Publishing → Add a new pending publisher → GitHub**, with
+     PyPI project name `xlsx2txt`, owner `click0`, repository `xlsx2txt`, workflow `release.yml`,
+     environment `pypi`;
+   - then either tick **pypi** when running the workflow, or set the repository variable
+     `PUBLISH_TO_PYPI=true` (**Settings → Secrets and variables → Actions → Variables**) so that
+     releases published from the Releases page go to PyPI too. The first upload creates the project.
 
 ## Comparison
 

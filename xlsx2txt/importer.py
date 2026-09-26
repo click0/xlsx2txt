@@ -338,6 +338,6 @@ def import_model(model: dict[str, Any], output: str | Path) -> Path:
         for sheet in model["sheets"]
         if sheet.get("printerSettings") in files
     }
-    shapes = {sheet["name"]: [shape["xml"] for shape in sheet.get("shapes", [])] for sheet in model["sheets"]}
-    patch_package(output, printer_settings=settings, shapes=shapes)
+    shapes = {sheet["name"]: sheet.get("shapes", []) for sheet in model["sheets"]}
+    patch_package(output, printer_settings=settings, shapes=shapes, media=model.get("media") or {})
     return output

@@ -247,6 +247,10 @@ def _export_sheet(ws, ws_values, styles: StyleTable) -> dict[str, Any]:
         sheet["view"] = view
 
     sheet_format = pick_attrs(ws.sheet_format, SHEET_FORMAT_ATTRS)
+    # An outline level of 0 is the default (openpyxl does not write it back).
+    for key in ("outlineLevelRow", "outlineLevelCol"):
+        if sheet_format.get(key) == 0:
+            del sheet_format[key]
     if sheet_format:
         sheet["format"] = sheet_format
 
@@ -420,9 +424,9 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
     warnings.extend(unsupported_warnings(path, keep_vba=is_macro))
     warnings.extend(openpyxl_warnings)
     printer = extract_printer_settings(path)
-    shapes = extract_shapes(path)
+    shapes, shape_media = extract_shapes(path)
     printer_files: dict[str, bytes] = {}
-    media: dict[str, bytes] = {}
+    media: dict[str, bytes] = dict(shape_media)
     pivots = export_pivots(wb.worksheets)
 
     sheets = []

@@ -9,6 +9,7 @@
 """
 
 import hashlib
+import html
 import posixpath
 import re
 import zipfile
@@ -18,7 +19,15 @@ from pathlib import Path
 from openpyxl.packaging.relationship import get_dependents, get_rels_path
 from openpyxl.reader.workbook import WorkbookParser
 
-from xlsx2txt.shapes import EMPTY_DRAWING, add_to_drawing, classify, drawing_children, shapes_from_drawing
+from xlsx2txt.shapes import (
+    EMPTY_DRAWING,
+    add_to_drawing,
+    classify,
+    drawing_children,
+    full_type,
+    rewrite_rel_ids,
+    shapes_from_drawing,
+)
 
 REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 PRINTER_SETTINGS_REL = f"{REL_NS}/printerSettings"
@@ -79,13 +88,14 @@ _RELATIONSHIPS_EMPTY = (
 )
 
 
-def _add_relationship(rels_xml: str, rel_type: str, target: str) -> tuple[str, str]:
+def _add_relationship(rels_xml: str, rel_type: str, target: str, external: bool = False) -> tuple[str, str]:
     used = set(re.findall(r'\bId="([^"]+)"', rels_xml))
     number = 1
     while f"rId{number}" in used:
         number += 1
     rel_id = f"rId{number}"
-    element = f'<Relationship Id="{rel_id}" Type="{rel_type}" Target="{target}"/>'
+    mode = ' TargetMode="External"' if external else ""
+    element = f'<Relationship Id="{rel_id}" Type="{rel_type}" Target="{html.escape(target)}"{mode}/>'
     return rels_xml.replace("</Relationships>", element + "</Relationships>", 1), rel_id
 
 
@@ -160,9 +170,28 @@ def _add_printer_settings(parts, sheet_paths, settings: dict[str, bytes]) -> Non
         _add_override(parts, part, PRINTER_SETTINGS_TYPE)
 
 
-def _add_shapes(parts, sheet_paths, drawings, shapes: dict[str, list[str]]) -> None:
-    for sheet_name, fragments in sorted(shapes.items()):
-        if not fragments:
+_IMAGE_TYPES = {
+    "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif", "bmp": "image/bmp",
+    "tif": "image/tiff", "tiff": "image/tiff", "emf": "image/x-emf", "wmf": "image/x-wmf",
+    "svg": "image/svg+xml", "wdp": "image/vnd.ms-photo",
+}
+
+
+def _ensure_default(parts: dict[str, bytes], extension: str) -> None:
+    types = parts["[Content_Types].xml"].decode("utf-8")
+    if re.search(rf'<Default\b[^>]*Extension="{re.escape(extension)}"', types, re.I):
+        return
+    content_type = _IMAGE_TYPES.get(extension.lower(), "application/octet-stream")
+    default = f'<Default Extension="{extension}" ContentType="{content_type}"/>'
+    types = re.sub(r"(<Types\b[^>]*>)", lambda m: m.group(1) + default, types, count=1)
+    parts["[Content_Types].xml"] = types.encode("utf-8")
+
+
+def _add_shapes(parts, sheet_paths, drawings, shapes: dict[str, list[dict]],
+                media: dict[str, bytes]) -> None:
+    media_parts: dict[str, str] = {}
+    for sheet_name, sheet_shapes in sorted(shapes.items()):
+        if not sheet_shapes:
             continue
         sheet_path = sheet_paths.get(sheet_name)
         if sheet_path is None:
@@ -175,15 +204,41 @@ def _add_shapes(parts, sheet_paths, drawings, shapes: dict[str, list[str]]) -> N
             rel_id = _add_sheet_relationship(parts, sheet_path, DRAWING_REL, part)
             parts[sheet_path] = _link_drawing(parts[sheet_path].decode("utf-8"), rel_id).encode("utf-8")
             _add_override(parts, part, DRAWING_TYPE)
-        parts[part] = add_to_drawing(parts[part].decode("utf-8"), fragments).encode("utf-8")
+
+        rels_path = get_rels_path(part)
+        rels_xml = parts[rels_path].decode("utf-8") if rels_path in parts else _RELATIONSHIPS_EMPTY
+        placed = []
+        for shape in sheet_shapes:
+            mapping = {}
+            for old_id, rel in (shape.get("rels") or {}).items():
+                if rel.get("external"):
+                    target, external = rel["target"], True
+                else:
+                    name = rel["file"]
+                    if name not in media:
+                        raise ValueError(f"Sheet '{sheet_name}': missing image file media/{name} of a shape")
+                    if name not in media_parts:
+                        extension = posixpath.splitext(name)[1].lstrip(".") or "png"
+                        media_part = _free_part(parts, "xl/media/image{}." + extension)
+                        parts[media_part] = media[name]
+                        _ensure_default(parts, extension)
+                        media_parts[name] = media_part
+                    target = posixpath.relpath(media_parts[name], posixpath.dirname(part))
+                    external = False
+                rels_xml, mapping[old_id] = _add_relationship(rels_xml, full_type(rel["type"]), target, external)
+            placed.append((rewrite_rel_ids(shape["xml"], mapping), shape.get("layer")))
+        if rels_xml != _RELATIONSHIPS_EMPTY:
+            parts[rels_path] = rels_xml.encode("utf-8")
+        parts[part] = add_to_drawing(parts[part].decode("utf-8"), placed).encode("utf-8")
 
 
 def patch_package(path, printer_settings: dict[str, bytes] | None = None,
-                  shapes: dict[str, list[str]] | None = None) -> None:
+                  shapes: dict[str, list[dict]] | None = None, media: dict[str, bytes] | None = None) -> None:
     """Add printer settings and shapes to a file saved by openpyxl (in place).
 
     ``printer_settings``: ``{sheet name: bytes}``; ``shapes``: ``{sheet name:
-    [anchor XML, ...]}``.
+    [shape, ...]}`` as exported (see :mod:`xlsx2txt.shapes`); ``media``: the
+    pictures shapes refer to.
     """
     if not printer_settings and not any((shapes or {}).values()):
         return
@@ -194,7 +249,7 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
         drawings = _sheet_drawings(source, set(parts))
 
     _add_printer_settings(parts, sheet_paths, printer_settings or {})
-    _add_shapes(parts, sheet_paths, drawings, shapes or {})
+    _add_shapes(parts, sheet_paths, drawings, shapes or {}, media or {})
 
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as target_zip:
         # [Content_Types].xml first, as Office writes it.
@@ -207,9 +262,16 @@ def inject_printer_settings(path, settings: dict[str, bytes]) -> None:
     patch_package(path, printer_settings=settings)
 
 
-def extract_shapes(path) -> dict[str, list[dict]]:
-    """Return ``{worksheet name: [shape, ...]}`` (see :mod:`xlsx2txt.shapes`)."""
+def _drawing_shapes(archive: zipfile.ZipFile, names: set[str], drawing: str):
+    rels_path = get_rels_path(drawing)
+    rels = {rel.Id: rel for rel in get_dependents(archive, rels_path)} if rels_path in names else {}
+    return shapes_from_drawing(archive.read(drawing).decode("utf-8", errors="replace"), rels, archive.read)
+
+
+def extract_shapes(path) -> tuple[dict[str, list[dict]], dict[str, bytes]]:
+    """Return ``({worksheet name: [shape, ...]}, {media name: bytes})``."""
     result: dict[str, list[dict]] = {}
+    media: dict[str, bytes] = {}
     with zipfile.ZipFile(path) as archive:
         names = set(archive.namelist())
         sheet_paths = _sheet_paths(archive)
@@ -217,9 +279,10 @@ def extract_shapes(path) -> dict[str, list[dict]]:
             if not sheet_paths[sheet_name].startswith("xl/worksheets/"):
                 continue
             for drawing in drawings:
-                shapes, _ = shapes_from_drawing(archive.read(drawing).decode("utf-8"))
+                shapes, _, shape_media = _drawing_shapes(archive, names, drawing)
                 result.setdefault(sheet_name, []).extend(shapes)
-    return result
+                media.update(shape_media)
+    return result, media
 
 
 # ---------------------------------------------------------------------------
@@ -301,13 +364,13 @@ def unsupported_warnings(path, keep_vba: bool = False) -> list[str]:
             is_worksheet = sheet_path.startswith("xl/worksheets/")
             for drawing_path in drawings.get(sheet_name, []):
                 drawing = archive.read(drawing_path).decode("utf-8", errors="replace")
-                for child in drawing_children(drawing)[1]:
-                    kind = classify(child)
-                    if kind == "linked shape" or (kind and not is_worksheet):
-                        shapes += 1
+                if is_worksheet:
+                    shapes += _drawing_shapes(archive, set(names), drawing_path)[1]
+                else:
+                    shapes += sum(1 for child in drawing_children(drawing)[1] if classify(child))
                 smart_art = smart_art or bool(_SMART_ART.search(drawing))
             if shapes:
-                what = "shape(s) with pictures, links or controls" if is_worksheet else "shape(s)"
+                what = "form control(s) or shape(s) with unsupported links" if is_worksheet else "shape(s)"
                 warnings.append(f"Sheet '{sheet_name}': {shapes} {what} are not exported")
             if smart_art:
                 warnings.append(f"Sheet '{sheet_name}': SmartArt diagrams are not exported")

@@ -13,7 +13,7 @@ what the text format looks like without running anything.
 | `05-rich-text` | Cells with several differently formatted runs of text |
 | `06-workbook-features` | Link to another workbook, custom document properties, sheet protection, print settings, tab color |
 | `07-pivot-table` | Pivot table with its cache (`data/pivots/`) |
-| `08-shapes` | Text box, shapes with text, a connector arrow and a group next to a picture; a sheet with shapes only |
+| `08-shapes` | Text box, shapes with text, a connector arrow, a group, a shape behind a picture, a shape with a hyperlink and one filled with a picture; a sheet with shapes only |
 
 Try it:
 
