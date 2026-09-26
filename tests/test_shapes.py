@@ -19,6 +19,8 @@ A = "http://schemas.openxmlformats.org/drawingml/2006/main"
 MC = "http://schemas.openxmlformats.org/markup-compatibility/2006"
 A14 = "http://schemas.microsoft.com/office/drawing/2010/main"
 R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+HYPERLINK = f"{R}/hyperlink"
+IMAGE = f"{R}/image"
 
 
 def _anchor(col, row, body):
@@ -28,14 +30,15 @@ def _anchor(col, row, body):
             f"<xdr:rowOff>0</xdr:rowOff></xdr:to>{body}<xdr:clientData/></xdr:twoCellAnchor>")
 
 
-def _sp(shape_id, name, text, extra=""):
+def _sp(shape_id, name, text, extra="", fill=""):
     return (f'<xdr:sp macro="" textlink=""><xdr:nvSpPr><xdr:cNvPr id="{shape_id}" name="{name}">{extra}'
             f'</xdr:cNvPr><xdr:cNvSpPr txBox="1"/></xdr:nvSpPr><xdr:spPr><a:prstGeom prst="rect"><a:avLst/>'
-            f'</a:prstGeom></xdr:spPr><xdr:txBody><a:bodyPr/><a:lstStyle/>'
+            f'</a:prstGeom>{fill}</xdr:spPr><xdr:txBody><a:bodyPr/><a:lstStyle/>'
             f'<a:p><a:r><a:t>{text}</a:t></a:r></a:p></xdr:txBody></xdr:sp>')
 
 
 # As Excel writes it: namespaces declared on the root only.
+BELOW = _anchor(0, 2, _sp(9, "Under picture", "Below"))
 SHAPES = [
     _anchor(3, 1, _sp(1, "TextBox 1", "Hello &amp; welcome")),
     f'<mc:AlternateContent xmlns:mc="{MC}"><mc:Choice xmlns:a14="{A14}" Requires="a14">'
@@ -43,18 +46,27 @@ SHAPES = [
     _anchor(3, 9, '<xdr:cxnSp macro=""><xdr:nvCxnSpPr><xdr:cNvPr id="3" name="Arrow 3"/><xdr:cNvCxnSpPr>'
                   '<a:stCxn id="1" idx="2"/><a:endCxn id="2" idx="0"/></xdr:cNvCxnSpPr></xdr:nvCxnSpPr>'
                   '<xdr:spPr><a:prstGeom prst="straightConnector1"><a:avLst/></a:prstGeom></xdr:spPr></xdr:cxnSp>'),
+    _anchor(8, 1, _sp(4, "Link 4", "Click", '<a:hlinkClick r:id="rId9"/>')),
+    _anchor(8, 5, _sp(5, "Filled 5", "", fill='<a:blipFill><a:blip r:embed="rId10"/><a:stretch><a:fillRect/>'
+                                              '</a:stretch></a:blipFill>')),
 ]
-LINKED = _anchor(8, 1, _sp(4, "Link 4", "Click", '<a:hlinkClick r:id="rId9"/>'))
+CONTROL = _anchor(8, 9, _sp(6, "Button 6", "Run", '<a:extLst><a:ext uri="{63B3BB69-23CF-44E3-9099-C40C66FF867C}">'
+                                                  f'<a14:compatExt xmlns:a14="{A14}" spid="_x0000_s1025"/>'
+                                                  '</a:ext></a:extLst>'))
+NAMES = ["Under picture", "TextBox 1", "Rectangle 2", "Arrow 3", "Link 4", "Filled 5"]
 
 
-def _png():
+def _png(color="red"):
     buffer = BytesIO()
-    PILImage.new("RGB", (4, 4), "red").save(buffer, format="PNG")
+    PILImage.new("RGB", (4, 4), color).save(buffer, format="PNG")
     return buffer.getvalue()
 
 
+FILL = _png("blue")
+
+
 def _excel_like(path):
-    """A picture (id 1 after openpyxl) plus shapes whose ids clash with it."""
+    """A picture (id 1 after openpyxl) between shapes whose ids clash with it."""
     wb = Workbook()
     wb.active.title = "Data"
     wb.active["A1"] = "value"
@@ -71,26 +83,54 @@ def _excel_like(path):
     picture = re.sub(r"<(/?)xdr:(blip|stretch|fillRect|prstGeom|avLst|off|ext|xfrm|picLocks)\b", r"<\1a:\2",
                      picture)
     parts["xl/drawings/drawing1.xml"] = (
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + new_root + picture
-        + "".join(SHAPES) + LINKED + "</xdr:wsDr>"
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + new_root + BELOW + picture
+        + "".join(SHAPES) + CONTROL + "</xdr:wsDr>"
     ).encode()
+    rels = parts["xl/drawings/_rels/drawing1.xml.rels"].decode()
+    parts["xl/drawings/_rels/drawing1.xml.rels"] = rels.replace("</Relationships>", (
+        f'<Relationship Id="rId9" Type="{HYPERLINK}" Target="https://example.com/?a=1&amp;b=2" '
+        'TargetMode="External"/>'
+        f'<Relationship Id="rId10" Type="{IMAGE}" Target="../media/fill.png"/></Relationships>'
+    )).encode()
+    parts["xl/media/fill.png"] = FILL
     with zipfile.ZipFile(path, "w") as target:
         for name, content in parts.items():
             target.writestr(name, content)
 
 
 def test_drawing_children_and_classification():
-    xml = f'<xdr:wsDr xmlns:xdr="{XDR}" xmlns:a="{A}" xmlns:r="{R}">' + "".join(SHAPES) + LINKED + "</xdr:wsDr>"
+    xml = f'<xdr:wsDr xmlns:xdr="{XDR}" xmlns:a="{A}" xmlns:r="{R}">' + "".join(SHAPES[:3]) + CONTROL + "</xdr:wsDr>"
     root, children = drawing_children(xml)
     assert root.startswith("<xdr:wsDr") and len(children) == 4
-    shapes, linked = shapes_from_drawing(xml)
-    assert linked == 1
+    shapes, unsupported, media = shapes_from_drawing(xml)
+    assert unsupported == 1 and media == {}
     assert [s["name"] for s in shapes] == ["TextBox 1", "Rectangle 2", "Arrow 3"]
     assert shapes[0]["text"] == "Hello & welcome"
     assert "text" not in shapes[2]
     # Every fragment declares the namespaces it uses.
     assert shapes[0]["xml"].startswith(f'<xdr:twoCellAnchor xmlns:xdr="{XDR}" xmlns:a="{A}">')
     assert f'xmlns:mc="{MC}"' in shapes[1]["xml"] and f'xmlns:xdr="{XDR}"' in shapes[1]["xml"]
+    # A reference to a relationship the drawing does not have cannot be kept.
+    shapes, unsupported, _ = shapes_from_drawing(xml.replace("</xdr:wsDr>", SHAPES[3] + "</xdr:wsDr>"))
+    assert unsupported == 2 and len(shapes) == 3
+
+
+def test_shapes_exported(tmp_path):
+    source = tmp_path / "shapes.xlsx"
+    _excel_like(source)
+    model = export_model(source)
+    shapes = model["sheets"][0]["shapes"]
+    assert [s["name"] for s in shapes] == NAMES
+    assert shapes[0]["layer"] == 0  # drawn below the picture
+    assert all("layer" not in s for s in shapes[1:])
+    assert shapes[4]["rels"] == {"rId9": {"type": "hyperlink", "target": "https://example.com/?a=1&b=2",
+                                          "external": True}}
+    fill = shapes[5]["rels"]["rId10"]
+    assert fill["type"] == "image" and model["media"][fill["file"]] == FILL
+    assert len(model["media"]) == 2  # the picture and the fill
+    assert model["manifest"]["warnings"] == [
+        "Sheet 'Data': 1 form control(s) or shape(s) with unsupported links are not exported"
+    ]
 
 
 def test_shapes_roundtrip(tmp_path):
@@ -98,28 +138,35 @@ def test_shapes_roundtrip(tmp_path):
     _excel_like(source)
     out_dir = tmp_path / "out"
     model = export_xlsx(source, out_dir)
-    sheet = model["sheets"][0]
-    assert [s["name"] for s in sheet["shapes"]] == ["TextBox 1", "Rectangle 2", "Arrow 3"]
-    assert len(sheet["images"]) == 1
-    assert model["manifest"]["warnings"] == [
-        "Sheet 'Data': 1 shape(s) with pictures, links or controls are not exported"
-    ]
     assert roundtrip_diff(model) == []
 
     restored = tmp_path / "restored.xlsx"
     import_dir(out_dir, restored)
     with zipfile.ZipFile(restored) as archive:
         drawing = archive.read("xl/drawings/drawing1.xml").decode()
-    ids = re.findall(r'cNvPr id="(\d+)"', drawing)
-    assert len(ids) == len(set(ids)) == 4  # picture + 3 shapes, clash with the picture resolved
-    # The connector still points at the renumbered shapes.
-    start, end = re.search(r'stCxn id="(\d+)".*?endCxn id="(\d+)"', drawing).groups()
-    names = dict(re.findall(r'cNvPr id="(\d+)" name="([^"]+)"', drawing))
-    assert (names[start], names[end]) == ("TextBox 1", "Rectangle 2")
+        rels = archive.read("xl/drawings/_rels/drawing1.xml.rels").decode()
+        types = archive.read("[Content_Types].xml").decode()
+        ids = re.findall(r'cNvPr id="(\d+)"', drawing)
+        assert len(ids) == len(set(ids)) == 7  # picture + 6 shapes, clash with the picture resolved
+        # The connector still points at the renumbered shapes.
+        start, end = re.search(r'stCxn id="(\d+)".*?endCxn id="(\d+)"', drawing).groups()
+        names = dict(re.findall(r'cNvPr id="(\d+)" name="([^"]+)"', drawing))
+        assert (names[start], names[end]) == ("TextBox 1", "Rectangle 2")
+        # Z-order: the first shape is still below the picture.
+        order = [name for _, name in re.findall(r'cNvPr id="(\d+)" name="([^"]+)"', drawing)]
+        assert order[0] == "Under picture" and order[1] != "TextBox 1"
+        # Relationships of the shapes are recreated.
+        link_id = re.search(r'hlinkClick r:id="([^"]+)"', drawing).group(1)
+        assert re.search(rf'Id="{link_id}"[^>]*Target="https://example.com/\?a=1&amp;b=2" TargetMode="External"',
+                         rels)
+        fill_id = re.search(r'blipFill><a:blip r:embed="([^"]+)"', drawing).group(1)
+        fill_target = re.search(rf'Id="{fill_id}"[^>]*Target="([^"]+)"', rels).group(1)
+        assert archive.read("xl/" + fill_target.replace("../", "")) == FILL
+        assert 'Extension="png"' in types
     load_workbook(restored)  # still readable
     again = export_model(restored)
     assert diff_models(model, again, ignore_cached=True) == []
-    assert [s["text"] for s in again["sheets"][0]["shapes"][:2]] == ["Hello & welcome", "Choice"]
+    assert [s["name"] for s in again["sheets"][0]["shapes"]] == NAMES
 
 
 def test_shapes_on_sheet_without_drawing(tmp_path):
@@ -139,7 +186,10 @@ def test_shapes_on_sheet_without_drawing(tmp_path):
         assert types.count("drawing+xml") == 2
     again = export_model(restored)
     assert "shapes" not in again["sheets"][0]
-    assert [s["name"] for s in again["sheets"][1]["shapes"]] == ["TextBox 1", "Rectangle 2", "Arrow 3"]
+    shapes = again["sheets"][1]["shapes"]
+    assert [s["name"] for s in shapes] == NAMES
+    assert all("layer" not in s for s in shapes)  # no pictures there
+    assert again["media"] == model["media"]
 
 
 def test_shape_changes_in_diff_and_text(tmp_path):
@@ -149,13 +199,18 @@ def test_shape_changes_in_diff_and_text(tmp_path):
     text = render_text(model)
     assert "shape 'TextBox 1' at D2: 'Hello & welcome'" in text
     assert "shape 'Arrow 3' at D10" in text
+    assert "shape 'Link 4' at I2: 'Click'  <link https://example.com/?a=1&b=2>" in text
 
     edited = export_model(source)
-    shape = edited["sheets"][0]["shapes"][0]
-    shape["xml"] = shape["xml"].replace("Hello &amp; welcome", "Bye")
-    shape["text"] = "Bye"
-    del edited["sheets"][0]["shapes"][2]
+    shapes = edited["sheets"][0]["shapes"]
+    shapes[1]["xml"] = shapes[1]["xml"].replace("Hello &amp; welcome", "Bye")
+    shapes[1]["text"] = "Bye"
+    shapes[4]["rels"]["rId9"]["target"] = "https://example.org/"
+    del shapes[0]["layer"]
+    del shapes[3]
     assert diff_models(model, edited) == [
+        "[Data] shape 'Under picture': changed",
         "[Data] shape 'TextBox 1': text changed",
         "[Data] shape 'Arrow 3': removed",
+        "[Data] shape 'Link 4': changed",
     ]

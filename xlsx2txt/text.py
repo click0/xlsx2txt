@@ -114,6 +114,8 @@ def render_text(model: dict[str, Any], styles: bool = True) -> str:
             line = f"shape {shape.get('name', '')!r} at {shape_cell(shape) or '?'}"
             if shape.get("text"):
                 line += f": {shape['text']!r}"
+            for rel in (shape.get("rels") or {}).values():
+                line += f"  <link {rel['target']}>" if rel.get("external") else f"  [fill {rel.get('file')}]"
             lines.append(line)
         for entry in sheet.get("pivotTables", []):
             description = describe_pivot((model.get("pivots") or {}).get(entry["table"], ""))

@@ -189,3 +189,24 @@ def test_theme_line_endings_preserved(tmp_path):
 
     write_model(model, out_dir)
     assert read_model(out_dir)["theme"] == model["theme"]
+
+
+def test_zero_outline_levels_are_defaults(tmp_path):
+    """LibreOffice writes outlineLevelCol="0"; openpyxl drops it on save."""
+    import zipfile
+
+    path = tmp_path / "outline.xlsx"
+    wb = Workbook()
+    wb.active["A1"] = 1
+    wb.save(path)
+    with zipfile.ZipFile(path) as source:
+        parts = {name: source.read(name) for name in source.namelist()}
+    sheet = parts["xl/worksheets/sheet1.xml"].decode()
+    parts["xl/worksheets/sheet1.xml"] = sheet.replace(
+        "<sheetFormatPr ", '<sheetFormatPr outlineLevelRow="0" outlineLevelCol="0" ', 1).encode()
+    with zipfile.ZipFile(path, "w") as target:
+        for name, content in parts.items():
+            target.writestr(name, content)
+    model = export_model(path)
+    assert "outlineLevelCol" not in model["sheets"][0].get("format", {})
+    assert roundtrip_diff(model) == []

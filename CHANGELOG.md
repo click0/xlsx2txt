@@ -10,9 +10,17 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 - Shapes: text boxes, rectangles and other preset shapes, connector arrows
   and groups are exported with the sheet (`shapes`: name, text and the
   drawing XML) and restored on import, also on sheets without pictures or
-  charts. `cat`, `info` and `diff` show them. Shapes filled with a picture or
-  carrying a hyperlink are still only reported in the warnings.
+  charts. Picture fills (stored in `data/media/`), hyperlinks of shapes and
+  their drawing order relative to pictures and charts are kept too. `cat`,
+  `info` and `diff` show them. Form controls are still only reported in the
+  warnings.
 - Example `08-shapes`.
+- The README links work on PyPI (absolute URLs) and describe the exact
+  PyPI trusted-publisher settings.
+
+### Fixed
+- `outlineLevelRow="0"` / `outlineLevelCol="0"` (written e.g. by
+  LibreOffice) no longer make `verify` report a difference.
 
 ## [0.4.0] - 2026-09-25
 

@@ -141,7 +141,7 @@ def test_warnings_for_lost_parts(tmp_path):
                  'xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main">'
                  '<x14:sparklineGroups/></ext></extLst></worksheet>')
     # openpyxl writes drawings in the default namespace (Excel uses the xdr: prefix).
-    # A shape with a hyperlink refers to other parts and is not exported.
+    # A shape linking to a relationship the drawing does not have cannot be kept.
     shape = ('<twoCellAnchor><from><col>5</col><colOff>0</colOff><row>5</row><rowOff>0</rowOff></from>'
              '<to><col>7</col><colOff>0</colOff><row>7</row><rowOff>0</rowOff></to>'
              '<sp><nvSpPr><cNvPr id="9" name="Arrow"><a:hlinkClick xmlns:a="http://schemas.openxmlformats.org/'
@@ -165,7 +165,7 @@ def test_warnings_for_lost_parts(tmp_path):
     assert "data connections / queries: 1 part(s) are not exported" in warnings
     assert "1 unknown part(s) are not exported: xl/unknownThing/part1.xml" in warnings
     assert "Sheet 'Data': sparklines are not exported" in warnings
-    assert "Sheet 'Data': 1 shape(s) with pictures, links or controls are not exported" in warnings
+    assert "Sheet 'Data': 1 form control(s) or shape(s) with unsupported links are not exported" in warnings
     assert not any("person" in w for w in warnings)
 
     model = export_model(path)

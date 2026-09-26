@@ -1,5 +1,7 @@
 # xlsx2txt
 
+[English](https://github.com/click0/xlsx2txt/blob/main/README.md)
+
 **Двосторонній конвертер між Excel (.xlsx/.xlsm) та текстовим JSON-форматом з повною підтримкою round-trip.**
 
 На відміну від простих екстракторів тексту, xlsx2txt зберігає все — формули, стилі, об'єднані клітинки, VBA-макроси — і може повністю відновити оригінальний Excel-файл.
@@ -79,8 +81,8 @@ xlsx2txt info report.xlsx
 
 ## Приклади
 
-У каталозі [`examples/`](examples/) лежать невеликі книги для кожної групи
-можливостей разом з їхніми експортами, наприклад [`examples/02-styles/`](examples/02-styles/).
+У каталозі [`examples/`](https://github.com/click0/xlsx2txt/tree/main/examples/) лежать невеликі книги для кожної групи
+можливостей разом з їхніми експортами, наприклад [`examples/02-styles/`](https://github.com/click0/xlsx2txt/tree/main/examples/02-styles/).
 
 ## Команди
 
@@ -150,7 +152,10 @@ report/
 
 Фігури перелічені у файлі аркуша в `shapes`: `name` і `text` — лише для
 перегляду в diff, а `xml` — фігура в тому вигляді, в якому її зберігає Excel;
-саме його використовує імпорт, тож текст змінюйте всередині `xml`.
+саме його використовує імпорт, тож текст змінюйте всередині `xml`. У `rels` —
+те, на що посилається фігура (адреса гіперпосилання або зображення заливки,
+що зберігається в `data/media/`), у `layer` — кількість зображень і діаграм
+під нею (відсутній, якщо фігура поверх усіх).
 
 ## Інтеграція з Git
 
@@ -172,8 +177,7 @@ git config diff.xlsx.textconv "xlsx2txt cat"
 
 ## Обмеження
 
-- Не експортуються: SmartArt, фігури із заливкою зображенням або з
-  гіперпосиланням, нові коментарі з обговореннями
+- Не експортуються: SmartArt, нові коментарі з обговореннями
   (лишаються як звичайні примітки), спарклайни, зрізи та часові шкали,
   елементи керування форм і ActiveX, вбудовані OLE-об'єкти, підключення до
   даних і Power Query, модель даних, зображення в клітинках. `export` та
@@ -187,7 +191,8 @@ git config diff.xlsx.textconv "xlsx2txt cat"
   (але лишається прихованим).
 - Діаграми зберігаються як XML у тому вигляді, який розуміє openpyxl;
   рідкісні можливості діаграм, яких openpyxl не підтримує, можуть втрачатися.
-- Відновлені фігури малюються поверх зображень і діаграм аркуша.
+- Порядок накладання фігур відносно зображень і діаграм зберігається; самі
+  зображення й діаграми відновлюються так, що діаграми йдуть першими.
 - Формули не перераховуються; Excel перерахує їх при відкритті файлу.
 
 ## Випуск релізу
@@ -195,7 +200,7 @@ git config diff.xlsx.textconv "xlsx2txt cat"
 Релізи робляться через веб-інтерфейс GitHub (workflow `.github/workflows/release.yml`):
 
 1. Збільште `__version__` у `xlsx2txt/__init__.py` (версія пакета береться звідти), опишіть версію в
-   [CHANGELOG.md](CHANGELOG.md) і [CHANGELOG_UK.md](CHANGELOG_UK.md) (розділ `## [X.Y.Z] - дата`) і
+   [CHANGELOG.md](https://github.com/click0/xlsx2txt/blob/main/CHANGELOG.md) і [CHANGELOG_UK.md](https://github.com/click0/xlsx2txt/blob/main/CHANGELOG_UK.md) (розділ `## [X.Y.Z] - дата`) і
    злийте в `main`. Цей розділ стане описом релізу.
 2. Далі або
    - **Actions → release → Run workflow**, введіть версію (напр. `0.1.0`); workflow прожене тести,
@@ -203,9 +208,13 @@ git config diff.xlsx.textconv "xlsx2txt cat"
    - **Releases → Draft a new release**, створіть тег `v0.1.0`, натисніть **Publish**; workflow прожене
      тести й додасть зібрані файли до цього релізу. Опис залиште порожнім (або натисніть
      "Generate release notes"): його буде замінено текстом зі списку змін; опис, написаний вручну, лишається.
-3. Публікація на PyPI (необов'язково): додайте [trusted publisher](https://docs.pypi.org/trusted-publishers/)
-   на PyPI (workflow `release.yml`, environment `pypi`), потім позначте **pypi** при запуску workflow або
-   задайте змінну репозиторію `PUBLISH_TO_PYPI=true` для релізів, створених на сторінці Releases.
+3. Публікація на PyPI (необов'язково, без токенів — [trusted publishing](https://docs.pypi.org/trusted-publishers/)):
+   - на pypi.org: **Your projects → Publishing → Add a new pending publisher → GitHub**, поля:
+     PyPI project name `xlsx2txt`, owner `click0`, repository `xlsx2txt`, workflow `release.yml`,
+     environment `pypi`;
+   - потім або позначте **pypi** при запуску workflow, або задайте змінну репозиторію
+     `PUBLISH_TO_PYPI=true` (**Settings → Secrets and variables → Actions → Variables**), щоб релізи,
+     опубліковані на сторінці Releases, теж ішли на PyPI. Перше завантаження створює проєкт.
 
 ## Порівняння
 

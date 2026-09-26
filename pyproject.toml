@@ -50,6 +50,7 @@ xlsx2txt = "xlsx2txt.cli:main"
 Homepage = "https://github.com/click0/xlsx2txt"
 Repository = "https://github.com/click0/xlsx2txt"
 Issues = "https://github.com/click0/xlsx2txt/issues"
+Changelog = "https://github.com/click0/xlsx2txt/blob/main/CHANGELOG.md"
 
 [tool.setuptools.dynamic]
 version = {attr = "xlsx2txt.__version__"}

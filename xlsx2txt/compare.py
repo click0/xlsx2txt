@@ -74,6 +74,31 @@ def _dims_view(dims: dict[str, Any], styles: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def _diff_shapes(prefix: str, shapes_a: list, shapes_b: list, out: list[str]) -> None:
+    xml_a = normalized_shapes(shapes_a)
+    xml_b = normalized_shapes(shapes_b)
+    names_a = [s.get("name") for s in shapes_a]
+    names_b = [s.get("name") for s in shapes_b]
+    # Pair shapes by name when names identify them, otherwise by position.
+    if None not in names_a + names_b and len(set(names_a)) == len(names_a) and len(set(names_b)) == len(names_b):
+        keys_a, keys_b = names_a, names_b
+    else:
+        keys_a, keys_b = list(range(len(shapes_a))), list(range(len(shapes_b)))
+    index_b = {key: i for i, key in enumerate(keys_b)}
+    for i, key in enumerate(keys_a):
+        label = f"{prefix} shape {shapes_a[i].get('name', i + 1)!r}"
+        if key not in index_b:
+            out.append(f"{label}: removed")
+            continue
+        j = index_b[key]
+        if xml_a[i] != xml_b[j]:
+            same_text = shapes_a[i].get("text") == shapes_b[j].get("text")
+            out.append(f"{label}: {'changed' if same_text else 'text changed'}")
+    for j, key in enumerate(keys_b):
+        if key not in keys_a:
+            out.append(f"{prefix} shape {shapes_b[j].get('name', j + 1)!r}: added")
+
+
 def _diff_sheet(name: str, a: dict[str, Any], b: dict[str, Any],
                 styles_a: dict[str, Any], styles_b: dict[str, Any],
                 ignore_cached: bool, out: list[str]) -> None:
@@ -84,18 +109,7 @@ def _diff_sheet(name: str, a: dict[str, Any], b: dict[str, Any],
             continue
         _diff_values(f"{prefix} {key}", a.get(key), b.get(key), out)
 
-    shapes_a = a.get("shapes", [])
-    shapes_b = b.get("shapes", [])
-    xml_a = normalized_shapes(shapes_a)
-    xml_b = normalized_shapes(shapes_b)
-    for i in range(max(len(xml_a), len(xml_b))):
-        if i >= len(xml_b):
-            out.append(f"{prefix} shape {shapes_a[i].get('name', i + 1)!r}: removed")
-        elif i >= len(xml_a):
-            out.append(f"{prefix} shape {shapes_b[i].get('name', i + 1)!r}: added")
-        elif xml_a[i] != xml_b[i]:
-            what = "text changed" if shapes_a[i].get("text") != shapes_b[i].get("text") else "changed"
-            out.append(f"{prefix} shape {shapes_a[i].get('name', i + 1)!r}: {what}")
+    _diff_shapes(prefix, a.get("shapes", []), b.get("shapes", []), out)
 
     _diff_values(
         f"{prefix} dimensions",
@@ -222,6 +236,9 @@ def validate_model(model: dict[str, Any]) -> list[str]:
         for number, shape in enumerate(sheet.get("shapes", []), start=1):
             if not isinstance(shape.get("xml"), str) or not shape["xml"].startswith("<"):
                 errors.append(f"[{sheet.get('name')}] shape {number}: no XML")
+            for rel in (shape.get("rels") or {}).values():
+                if not rel.get("external") and rel.get("file") not in media:
+                    errors.append(f"[{sheet.get('name')}] shape {number}: file not found: data/media/{rel.get('file')}")
         for image in sheet.get("images", []):
             if image.get("file") not in media:
                 errors.append(f"[{sheet.get('name')}] image file not found: data/media/{image.get('file')}")
