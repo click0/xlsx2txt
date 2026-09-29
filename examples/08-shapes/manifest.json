@@ -4,7 +4,7 @@
   "generator": "xlsx2txt 0.7.0",
   "source": {"name": "08-shapes.xlsx", "type": "xlsx"},
   "sheetCount": 2,
-  "cellCount": 2,
+  "cellCount": 10,
   "hasVba": false,
   "warnings": []
 }

@@ -3,6 +3,7 @@
 import json
 from typing import Any
 
+from openpyxl.cell.cell import Cell
 from openpyxl.styles import Alignment, Border, Font, PatternFill, GradientFill, Protection, Side
 from openpyxl.styles.colors import Color
 from openpyxl.styles.differential import DifferentialStyle
@@ -276,9 +277,12 @@ class StyleTable:
         self._pools = {name: _Pool() for name in STYLE_PARTS}
         self._styles = _Pool()
 
-    def add(self, obj) -> int:
-        """Register the style of a cell (or row/column dimension)."""
-        style = {
+        self._named: list[dict[str, Any]] = []
+        # The default named style: "Normal", or its localized name ("Звичайний").
+        self._default_name = "Normal"
+
+    def _parts(self, obj) -> dict[str, Any]:
+        return {
             "font": self._pools["fonts"].add(font_to_json(obj.font)),
             "fill": self._pools["fills"].add(fill_to_json(obj.fill)),
             "border": self._pools["borders"].add(border_to_json(obj.border)),
@@ -286,11 +290,36 @@ class StyleTable:
             "protection": self._pools["protections"].add(protection_to_json(obj.protection)),
             "numFmt": obj.number_format or "General",
         }
+
+    def add(self, obj) -> int:
+        """Register the style of a cell (or row/column dimension)."""
+        style = self._parts(obj)
+        # Only cells refer to a named style (row/column styles do not).
+        name = obj.style if isinstance(obj, Cell) else None
+        if isinstance(name, str) and name not in ("Normal", self._default_name):
+            style["style"] = name  # the named style (cell style) the cell is based on
         return self._styles.add(style)
+
+    def add_named(self, named_styles) -> None:
+        """Register the workbook's named styles (Excel's cell styles gallery)."""
+        for named in named_styles:
+            if named.builtinId == 0:
+                self._default_name = named.name
+            if named.name == "Normal":
+                continue
+            entry: dict[str, Any] = {"name": named.name}
+            if named.builtinId is not None:
+                entry["builtinId"] = named.builtinId
+            if named.hidden:
+                entry["hidden"] = True
+            entry.update(self._parts(named))
+            self._named.append(entry)
 
     def to_json(self) -> dict[str, list[Any]]:
         result = {name: pool.items for name, pool in self._pools.items()}
         result["cellStyles"] = self._styles.items
+        if self._named:
+            result["namedStyles"] = self._named
         return result
 
 
@@ -302,18 +331,40 @@ class StyleApplier:
         self._objects: dict[int, tuple] = {}
         self._arrays: dict[int, Any] = {}
 
+    def _build(self, style: dict[str, Any]) -> tuple:
+        return (
+            font_from_json(self._styles["fonts"][style["font"]]),
+            fill_from_json(self._styles["fills"][style["fill"]]),
+            border_from_json(self._styles["borders"][style["border"]]),
+            alignment_from_json(self._styles["alignments"][style["alignment"]]),
+            protection_from_json(self._styles["protections"][style["protection"]]),
+            style.get("numFmt", "General"),
+        )
+
     def objects(self, index: int) -> tuple:
         if index not in self._objects:
-            style = self._styles["cellStyles"][index]
-            self._objects[index] = (
-                font_from_json(self._styles["fonts"][style["font"]]),
-                fill_from_json(self._styles["fills"][style["fill"]]),
-                border_from_json(self._styles["borders"][style["border"]]),
-                alignment_from_json(self._styles["alignments"][style["alignment"]]),
-                protection_from_json(self._styles["protections"][style["protection"]]),
-                style.get("numFmt", "General"),
-            )
+            self._objects[index] = self._build(self._styles["cellStyles"][index])
         return self._objects[index]
+
+    def register_named(self, wb) -> None:
+        """Add the exported named styles to a workbook."""
+        from openpyxl.styles import NamedStyle
+
+        existing = set(wb.named_styles)
+        for entry in self._styles.get("namedStyles") or []:
+            if entry.get("builtinId") == 0 and "Normal" in existing:
+                # A localized name of the default style: rename it.
+                wb._named_styles["Normal"].name = entry["name"]
+                existing = set(wb.named_styles)
+                continue
+            if entry["name"] in existing:
+                continue
+            font, fill, border, alignment, protection, num_fmt = self._build(entry)
+            wb.add_named_style(NamedStyle(
+                name=entry["name"], font=font, fill=fill, border=border, alignment=alignment,
+                protection=protection, number_format=num_fmt, builtinId=entry.get("builtinId"),
+                hidden=entry.get("hidden", False),
+            ))
 
     def apply(self, obj, index: int) -> None:
         from copy import copy
@@ -322,6 +373,9 @@ class StyleApplier:
             obj._style = copy(self._arrays[index])
             return
         font, fill, border, alignment, protection, num_fmt = self.objects(index)
+        name = self._styles["cellStyles"][index].get("style")
+        if name and isinstance(obj, Cell):
+            obj.style = name  # first the named style, then the cell's own formatting
         obj.font = font
         obj.fill = fill
         obj.border = border

@@ -1,1 +1,5 @@
-[{}]
+[
+  {},
+  {"vertical": "top", "wrapText": true},
+  {"horizontal": "center", "vertical": "center", "wrapText": true}
+]

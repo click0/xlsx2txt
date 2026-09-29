@@ -9,6 +9,7 @@ from xlsx2txt.models import Cell, CellStyle, Sheet
 
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
+COMPLEX_XLSX = Path(__file__).parent.parent / "examples" / "10-complex.xlsx"
 
 
 class TestReadCell:
@@ -132,7 +133,7 @@ class TestReadSheet:
 
     def test_read_complex_sheet(self):
         """Read complex sheet with merged cells and various data."""
-        sheet = read_sheet(FIXTURES_DIR / "complex.xlsx", "Data")
+        sheet = read_sheet(COMPLEX_XLSX, "Data")
 
         # Check merged cells
         assert "A1:D1" in sheet.merged_cells

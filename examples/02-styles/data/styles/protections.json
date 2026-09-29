@@ -1,1 +1,5 @@
-[{"locked": true, "hidden": false}]
+[
+  {"locked": true, "hidden": false},
+  {"locked": false, "hidden": false},
+  {"locked": true, "hidden": true}
+]

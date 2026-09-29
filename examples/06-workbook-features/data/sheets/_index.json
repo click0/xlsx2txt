@@ -1,1 +1,6 @@
-[{"name": "Report", "file": "Report.json"}]
+[
+  {"name": "Report", "file": "Report.json"},
+  {"name": "Contacts", "file": "Contacts.json"},
+  {"name": "Archive", "file": "Archive.json"},
+  {"name": "Internal", "file": "Internal.json"}
+]

@@ -19,7 +19,7 @@ def _reexport(model, tmp_path, suffix=".xlsx"):
     return target, export_model(target, cached_values=False)
 
 
-@pytest.mark.parametrize("name", ["simple.xlsx", "styled.xlsx", "empty.xlsx", "formula.xlsx", "complex.xlsx"])
+@pytest.mark.parametrize("name", ["simple.xlsx", "styled.xlsx", "empty.xlsx", "formula.xlsx"])
 def test_fixture_roundtrip(name):
     model = export_model(FIXTURES_DIR / name)
     assert roundtrip_diff(model) == []
@@ -210,3 +210,54 @@ def test_zero_outline_levels_are_defaults(tmp_path):
     model = export_model(path)
     assert "outlineLevelCol" not in model["sheets"][0].get("format", {})
     assert roundtrip_diff(model) == []
+
+
+def test_workbook_protection_and_named_styles(tmp_path):
+    """Workbook protection keeps its password hash (not hashed twice); custom
+    named styles and the cells using them survive."""
+    from openpyxl.styles import Font, NamedStyle
+    from openpyxl.workbook.protection import WorkbookProtection
+
+    source = tmp_path / "protected.xlsx"
+    wb = Workbook()
+    wb.security = WorkbookProtection(lockStructure=True, lockWindows=True)
+    wb.security.workbookPassword = "secret"
+    wb.add_named_style(NamedStyle(name="Accent", font=Font(bold=True, color="FFC00000")))
+    wb.active["A1"] = "styled"
+    wb.active["A1"].style = "Accent"
+    wb.active["A1"].font = Font(bold=True, italic=True, color="FFC00000")  # the cell differs from its style
+    wb.save(source)
+
+    model = export_model(source)
+    assert model["workbook"]["protection"]["lockStructure"] is True
+    assert [s["name"] for s in model["styles"]["namedStyles"]] == ["Accent"]
+    restored = tmp_path / "restored.xlsx"
+    export_xlsx(source, tmp_path / "out")
+    import_dir(tmp_path / "out", restored)
+    again = load_workbook(restored)
+    assert again.security.workbookPassword == load_workbook(source).security.workbookPassword
+    assert again.security.lockWindows is True
+    assert again["Sheet"]["A1"].style == "Accent" and again["Sheet"]["A1"].font.italic
+    assert diff_models(model, export_model(restored), ignore_cached=True) == []
+
+
+def test_localized_default_style(tmp_path):
+    """Excel in Ukrainian calls the default style "Звичайний": it stays the one
+    default style, and cells do not carry its name."""
+    from openpyxl.styles import Font
+
+    source = tmp_path / "localized.xlsx"
+    wb = Workbook()
+    wb._named_styles["Normal"].name = "Звичайний"
+    wb.active["A1"] = "bold"
+    wb.active["A1"].font = Font(bold=True)
+    wb.save(source)
+
+    model = export_model(source)
+    assert model["styles"]["namedStyles"][0]["name"] == "Звичайний"
+    assert not any("style" in style for style in model["styles"]["cellStyles"])
+    restored = tmp_path / "restored.xlsx"
+    from xlsx2txt.importer import import_model
+    import_model(model, restored)
+    assert load_workbook(restored).named_styles == ["Звичайний"]
+    assert diff_models(model, export_model(restored), ignore_cached=True) == []

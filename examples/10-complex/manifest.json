@@ -1,0 +1,10 @@
+{
+  "format": "xlsx2txt",
+  "formatVersion": 1,
+  "generator": "xlsx2txt 0.7.0",
+  "source": {"name": "10-complex.xlsx", "type": "xlsx"},
+  "sheetCount": 1,
+  "cellCount": 19,
+  "hasVba": false,
+  "warnings": []
+}

@@ -1,14 +1,15 @@
 {
   "name": "Styles",
   "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
-  "usedRange": "A1:E8",
+  "usedRange": "A1:F21",
   "dimensions": {
     "columns": {
-      "A": {"width": 14.0},
+      "A": {"width": 24.0},
       "B": {"width": 16.0},
       "C": {"width": 16.0},
-      "D": {"width": 10.0},
-      "E": {"width": 12.0}
+      "D": {"width": 14.0},
+      "E": {"width": 12.0},
+      "F": {"width": 14.0}
     },
     "rows": {"1": {"height": 28.0}}
   },
@@ -16,8 +17,13 @@
   "print": {
     "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
   },
+  "protection": {"sheet": true, "objects": false, "scenarios": false, "formatCells": false, "formatRows": true, "formatColumns": true, "insertColumns": true, "insertRows": true, "insertHyperlinks": true, "deleteColumns": true, "deleteRows": true, "selectLockedCells": false, "selectUnlockedCells": false, "sort": true, "autoFilter": true, "pivotTables": true},
   "dataValidations": [
-    {"sqref": "E3:E6", "type": "list", "formula1": "\"open,closed,archived\"", "allow_blank": false, "showDropDown": false, "showErrorMessage": true, "showInputMessage": false, "error": "Choose a status from the list"}
+    {"sqref": "E3:E6", "type": "list", "formula1": "\"open,closed,archived\"", "allow_blank": false, "showDropDown": false, "showErrorMessage": true, "showInputMessage": false, "error": "Choose a status from the list"},
+    {"sqref": "B3:C6", "type": "whole", "operator": "between", "formula1": "0", "formula2": "1000000", "allow_blank": false, "showDropDown": false, "showErrorMessage": false, "showInputMessage": true, "promptTitle": "Revenue", "prompt": "Whole number up to 1 000 000"},
+    {"sqref": "D10", "type": "date", "operator": "greaterThan", "formula1": "DATE(2026,1,1)", "allow_blank": false, "showDropDown": false, "showErrorMessage": false, "showInputMessage": false},
+    {"sqref": "F3", "type": "textLength", "operator": "lessThanOrEqual", "formula1": "20", "allow_blank": false, "showDropDown": false, "showErrorMessage": false, "showInputMessage": false, "errorStyle": "warning"},
+    {"sqref": "F5", "type": "custom", "formula1": "=MOD(F5,5)=0", "allow_blank": false, "showDropDown": false, "showErrorMessage": true, "showInputMessage": false, "error": "Multiples of 5 only"}
   ],
   "conditionalFormatting": [
     {
@@ -35,14 +41,41 @@
     {
       "range": "B3:B6",
       "rules": [
-        {"type": "dataBar", "priority": 2, "dataBar": "<dataBar><cfvo type=\"min\" /><cfvo type=\"max\" /><color rgb=\"FF638EC6\" /></dataBar>"}
+        {"type": "dataBar", "priority": 2, "dataBar": "<dataBar><cfvo type=\"min\" /><cfvo type=\"max\" /><color rgb=\"FF638EC6\" /></dataBar>"},
+        {
+          "type": "top10",
+          "priority": 6,
+          "rank": 1,
+          "dxf": {"fill": {"patternType": "solid", "bgColor": "FFC6EFCE"}}
+        }
       ]
     },
     {
       "range": "C3:C6",
       "rules": [
-        {"type": "colorScale", "priority": 3, "colorScale": "<colorScale><cfvo type=\"min\" /><cfvo type=\"max\" /><color rgb=\"FF63BE7B\" /><color rgb=\"FFF8696B\" /></colorScale>"}
+        {"type": "colorScale", "priority": 3, "colorScale": "<colorScale><cfvo type=\"min\" /><cfvo type=\"percentile\" val=\"50\" /><cfvo type=\"max\" /><color rgb=\"FF63BE7B\" /><color rgb=\"FFFFEB84\" /><color rgb=\"FFF8696B\" /></colorScale>"}
       ]
+    },
+    {
+      "range": "B3:C6",
+      "rules": [
+        {"type": "iconSet", "priority": 4, "iconSet": "<iconSet iconSet=\"3Arrows\"><cfvo type=\"percent\" val=\"0\" /><cfvo type=\"percent\" val=\"33\" /><cfvo type=\"percent\" val=\"67\" /></iconSet>"}
+      ]
+    },
+    {
+      "range": "A3:A6",
+      "rules": [
+        {
+          "type": "expression",
+          "priority": 5,
+          "formula": ["$D3<0.1"],
+          "dxf": {"font": {"bold": true, "color": "FFC00000"}}
+        }
+      ]
+    },
+    {
+      "range": "E3:E6",
+      "rules": [{"type": "duplicateValues", "priority": 7, "dxf": {"font": {"italic": true}}}]
     }
   ],
   "cells": {
@@ -57,11 +90,13 @@
     "C3": {"v": 98000, "t": "n", "s": 6},
     "D3": {"v": 0.216, "t": "n", "s": 7},
     "E3": {"v": "open", "t": "s", "s": 5},
+    "F3": {"v": "Editable", "t": "s", "s": 8},
     "A4": {"v": "Q2", "t": "s", "s": 5},
     "B4": {"v": 142000, "t": "n", "s": 6},
     "C4": {"v": 101000, "t": "n", "s": 6},
     "D4": {"v": 0.2887323943661972, "t": "n", "s": 7},
     "E4": {"v": "open", "t": "s", "s": 5},
+    "F4": {"t": "f", "f": "=B3-C3", "s": 9},
     "A5": {"v": "Q3", "t": "s", "s": 5},
     "B5": {"v": 98000, "t": "n", "s": 6},
     "C5": {"v": 105000, "t": "n", "s": 6},
@@ -72,9 +107,36 @@
     "C6": {"v": 120000, "t": "n", "s": 6},
     "D6": {"v": 0.2982456140350877, "t": "n", "s": 7},
     "E6": {"v": "open", "t": "s", "s": 5},
-    "A8": {"v": "Wrapped text that does not fit into one line of the cell", "t": "s", "s": 8},
-    "B8": {"v": "Rotated", "t": "s", "s": 9},
-    "C8": {"v": "Italic strike", "t": "s", "s": 10},
-    "D8": {"v": "Theme color", "t": "s", "s": 11}
+    "F6": {"v": "Named style", "t": "s", "s": 10},
+    "A8": {"v": "Wrapped text that does not fit into one line of the cell", "t": "s", "s": 11},
+    "B8": {"v": "Rotated", "t": "s", "s": 12},
+    "C8": {"v": "Italic strike", "t": "s", "s": 13},
+    "D8": {"v": "Theme color", "t": "s", "s": 14},
+    "A10": {"v": "Double underline", "t": "s", "s": 15},
+    "C10": {"v": "Date", "t": "s"},
+    "D10": {"v": "2026-04-01T00:00:00", "t": "d", "s": 16},
+    "A11": {"v": "Subscript", "t": "s", "s": 17},
+    "C11": {"v": "Scientific", "t": "s"},
+    "D11": {"v": 6.02214076e+23, "t": "n", "s": 18},
+    "A12": {"v": "Theme color + tint", "t": "s", "s": 19},
+    "C12": {"v": "Fraction", "t": "s"},
+    "D12": {"v": 1.375, "t": "n", "s": 20},
+    "A13": {"v": "Outline, shadow", "t": "s", "s": 21},
+    "C13": {"v": "Text", "t": "s"},
+    "D13": {"v": 12345, "t": "n", "s": 22},
+    "A14": {"v": "Pattern fill", "t": "s", "s": 23},
+    "C14": {"v": "Thousands", "t": "s"},
+    "D14": {"v": 1234567.891, "t": "n", "s": 24},
+    "A15": {"v": "Gradient fill", "t": "s", "s": 25},
+    "C15": {"v": "Colored sign", "t": "s"},
+    "D15": {"v": -12.5, "t": "n", "s": 26},
+    "A16": {"v": "Path gradient", "t": "s", "s": 27},
+    "C16": {"v": "Leading zeros", "t": "s"},
+    "D16": {"v": 42, "t": "n", "s": 28},
+    "A17": {"v": "Double/thick borders", "t": "s", "s": 29},
+    "A18": {"v": "Diagonal border", "t": "s", "s": 30},
+    "A19": {"v": "Indented, shrink to fit", "t": "s", "s": 31},
+    "A20": {"v": "Justified, bottom", "t": "s", "s": 32},
+    "A21": {"v": "Vertical text", "t": "s", "s": 33}
   }
 }

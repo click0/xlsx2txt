@@ -3,8 +3,8 @@
   "formatVersion": 1,
   "generator": "xlsx2txt 0.7.0",
   "source": {"name": "06-workbook-features.xlsx", "type": "xlsx"},
-  "sheetCount": 1,
-  "cellCount": 5,
+  "sheetCount": 4,
+  "cellCount": 91,
   "hasVba": false,
   "warnings": []
 }

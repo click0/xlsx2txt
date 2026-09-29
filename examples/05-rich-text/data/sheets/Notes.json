@@ -1,9 +1,9 @@
 {
   "name": "Notes",
   "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
-  "usedRange": "A1:A3",
-  "dimensions": {"columns": {"A": {"width": 40.0}}, "rows": {}},
-  "mergedCells": [],
+  "usedRange": "A1:C13",
+  "dimensions": {"columns": {"A": {"width": 40.0}, "B": {"width": 12.0}}, "rows": {"6": {"height": 48.0}}},
+  "mergedCells": ["A10:C11"],
   "print": {
     "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
   },
@@ -30,6 +30,63 @@
         {"text": "термін до 31.03", "font": {"b": true, "u": "single", "color": "FFC00000"}}
       ],
       "t": "rs"
-    }
+    },
+    "A4": {
+      "v": [
+        "H",
+        {"text": "2", "font": {"vertAlign": "subscript"}},
+        "O and CO",
+        {"text": "2", "font": {"vertAlign": "subscript"}}
+      ],
+      "t": "rs"
+    },
+    "A5": {
+      "v": [
+        {"text": "old price 120", "font": {"strike": true, "color": "FF7F7F7F"}},
+        " ",
+        {"text": "99", "font": {"sz": 14.0, "b": true, "color": "FFC00000"}},
+        " UAH"
+      ],
+      "t": "rs"
+    },
+    "A6": {
+      "v": [
+        {"text": "Line one", "font": {"b": true}},
+        "\n",
+        {"text": "line two", "font": {"i": true, "color": "FF2F5597"}},
+        "\n",
+        {"text": "line three", "font": {"u": "double"}}
+      ],
+      "t": "rs",
+      "s": 1
+    },
+    "A7": {
+      "v": [
+        {"text": "Georgia ", "font": {"rFont": "Georgia", "sz": 12.0}},
+        {"text": "Verdana ", "font": {"rFont": "Verdana", "sz": 9.0}},
+        {"text": "Times", "font": {"rFont": "Times New Roman", "sz": 11.0, "i": true}}
+      ],
+      "t": "rs"
+    },
+    "A8": {
+      "v": [
+        "日本語 ",
+        {"text": "太字", "font": {"b": true}},
+        " · Ελληνικά ",
+        {"text": "πλάγια", "font": {"i": true}},
+        " · ✅"
+      ],
+      "t": "rs"
+    },
+    "A10": {
+      "v": [
+        {"text": "Merged: ", "font": {"sz": 13.0, "b": true, "color": "FF1F4E79"}},
+        "rich text spanning three columns and two rows"
+      ],
+      "t": "rs",
+      "s": 2
+    },
+    "A13": {"v": "Plain text next to a formula", "t": "s"},
+    "B13": {"t": "f", "f": "=LEN(A13)"}
   }
 }

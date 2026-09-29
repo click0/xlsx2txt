@@ -1,7 +1,7 @@
 {
   "name": "Summary",
   "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
-  "usedRange": "A1:B2",
+  "usedRange": "A1:B5",
   "dimensions": {"columns": {}, "rows": {}},
   "mergedCells": [],
   "print": {
@@ -9,8 +9,14 @@
   },
   "cells": {
     "A1": {"v": "Orders total", "t": "s"},
-    "B1": {"t": "f", "f": "=Orders!D7"},
+    "B1": {"t": "f", "f": "=Orders!D8"},
     "A2": {"v": "Largest order", "t": "s"},
-    "B2": {"t": "f", "f": "=MAX(Orders!D2:D6)"}
+    "B2": {"t": "f", "f": "=MAX(Orders!D2:D7)"},
+    "A3": {"v": "Products", "t": "s"},
+    "B3": {"t": "f", "f": "=COUNTA(OrderProducts)"},
+    "A4": {"v": "Table total", "t": "s"},
+    "B4": {"t": "f", "f": "=SUM(OrderList[Total])"},
+    "A5": {"v": "Quarter budget", "t": "s"},
+    "B5": {"t": "f", "f": "=Budget!B1"}
   }
 }

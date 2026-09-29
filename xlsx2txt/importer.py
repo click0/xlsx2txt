@@ -5,6 +5,7 @@ import io
 import zipfile
 from pathlib import Path
 from typing import Any
+from xml.sax.saxutils import escape
 
 from openpyxl import Workbook
 from openpyxl.cell.cell import MergedCell
@@ -16,9 +17,12 @@ from openpyxl.utils.indexed_list import IndexedList
 from openpyxl.packaging.relationship import Relationship
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.workbook.external_link.external import ExternalLink
+from openpyxl.workbook.protection import WorkbookProtection
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.formula import ArrayFormula, DataTableFormula
+from openpyxl.worksheet.header_footer import HeaderFooter
 from openpyxl.worksheet.hyperlink import Hyperlink
+from openpyxl.worksheet.pagebreak import Break
 from openpyxl.worksheet.properties import PageSetupProperties
 from openpyxl.worksheet.table import Table
 from openpyxl.xml.functions import fromstring
@@ -178,6 +182,11 @@ def _import_sheet(wb: Workbook, sheet: dict[str, Any], applier: StyleApplier,
     _set_attrs(ws.print_options, printing.get("options", {}))
     if printing.get("fitToPage"):
         ws.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True)
+    if printing.get("headerFooter"):
+        ws.HeaderFooter = _header_footer(printing["headerFooter"])
+    for kind in ("row", "col"):
+        for data in printing.get("pageBreaks", {}).get(f"{kind}s", []):
+            getattr(ws, f"{kind}_breaks").append(Break(**data))
 
     if "protection" in sheet:
         protection = dict(sheet["protection"])
@@ -287,6 +296,7 @@ def build_workbook(model: dict[str, Any]) -> Workbook:
     styles = model["styles"]
     _apply_default_style(wb, styles)
     applier = StyleApplier(styles)
+    applier.register_named(wb)
     pivots = PivotBuilder(model.get("pivots") or {})
 
     for sheet in model["sheets"]:
@@ -315,6 +325,18 @@ def build_workbook(model: dict[str, Any]) -> Workbook:
         setattr(wb.properties, name, value)
 
     _set_attrs(wb.calculation, workbook.get("calculation", {}))
+    if not workbook.get("protection"):
+        wb.security = None  # openpyxl would write an empty <workbookProtection/>
+    else:
+        data = dict(workbook["protection"])
+        # Passwords are stored hashed; do not hash them again.
+        workbook_password = data.pop("workbookPassword", None)
+        revisions_password = data.pop("revisionsPassword", None)
+        wb.security = WorkbookProtection(**data)
+        if workbook_password:
+            wb.security.set_workbook_password(workbook_password, already_hashed=True)
+        if revisions_password:
+            wb.security.set_revisions_password(revisions_password, already_hashed=True)
 
     for data in workbook.get("definedNames", []):
         wb.defined_names[data["name"]] = _defined_name(data)
@@ -326,6 +348,15 @@ def build_workbook(model: dict[str, Any]) -> Workbook:
         wb.vba_archive = _vba_archive(model["vba"])
 
     return wb
+
+
+def _header_footer(data: dict[str, Any]) -> HeaderFooter:
+    flags = "".join(f' {name}="{int(data[name])}"' for name in
+                    ("differentOddEven", "differentFirst", "scaleWithDoc", "alignWithMargins") if name in data)
+    parts = "".join(f"<{name}>{escape(data[name])}</{name}>" for name in
+                    ("oddHeader", "oddFooter", "evenHeader", "evenFooter", "firstHeader", "firstFooter")
+                    if data.get(name))
+    return HeaderFooter.from_tree(fromstring(f"<headerFooter{flags}>{parts}</headerFooter>"))
 
 
 def import_model(model: dict[str, Any], output: str | Path) -> Path:

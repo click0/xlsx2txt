@@ -3,8 +3,8 @@
   "formatVersion": 1,
   "generator": "xlsx2txt 0.7.0",
   "source": {"name": "01-basic-data.xlsx", "type": "xlsx"},
-  "sheetCount": 1,
-  "cellCount": 42,
+  "sheetCount": 2,
+  "cellCount": 380,
   "hasVba": false,
   "warnings": []
 }

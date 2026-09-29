@@ -6,6 +6,31 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 
 ## [Unreleased]
 
+### Added
+- Named styles (Excel's cell styles gallery) are exported to
+  `data/styles/namedStyles.json` and restored, and cells keep the style they
+  are based on (`style` in `cellStyles.json`). Before, custom styles and
+  built-in ones such as "Hyperlink" disappeared from the gallery.
+- Page headers and footers, manual page breaks and workbook protection
+  (structure/windows, with the password hash kept as is) are exported and
+  restored; they were lost before.
+- `tests/test_fidelity.py` opens every example and its restored copy with
+  openpyxl and compares cells, styles and sheet/workbook settings directly,
+  so losses the exporter never sees are caught too.
+
+### Changed
+- The examples are much richer (more data, more kinds of styles, formulas,
+  charts, rules, printing settings; two pivot tables on one cache; more
+  shapes, sparklines and comments). `tests/fixtures/complex.xlsx` moved to
+  `examples/10-complex`.
+
+### Fixed
+- A localized default style (e.g. "Звичайний" in Ukrainian Excel) no longer
+  becomes a second style next to "Normal" after a round-trip, and cells no
+  longer carry its name.
+- A restored workbook no longer gets an empty `<workbookProtection/>` it did
+  not have.
+
 ## [0.7.0] - 2026-09-28
 
 ### Added

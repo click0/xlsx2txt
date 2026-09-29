@@ -1,7 +1,7 @@
 {
   "name": "Sales",
   "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
-  "usedRange": "A1:K5",
+  "usedRange": "A1:K8",
   "dimensions": {
     "columns": {
       "A": {"width": 12.0},
@@ -30,7 +30,7 @@
   "extensions": [
     {
       "type": "conditional formatting",
-      "xml": "<ext uri=\"{78C0D931-6437-407d-A8EE-F0AAD7539E65}\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><x14:conditionalFormattings><x14:conditionalFormatting xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\"><x14:cfRule type=\"dataBar\" id=\"{9F0C2E1A-5B7D-4C3E-8A21-6D4F0B9E7C15}\"><x14:dataBar minLength=\"0\" maxLength=\"100\" gradient=\"0\" negativeBarColorSameAsPositive=\"0\" axisPosition=\"middle\"><x14:cfvo type=\"autoMin\"/><x14:cfvo type=\"autoMax\"/><x14:negativeFillColor rgb=\"FFFF0000\"/><x14:axisColor rgb=\"FF000000\"/></x14:dataBar></x14:cfRule><xm:sqref>F2:F5</xm:sqref></x14:conditionalFormatting></x14:conditionalFormattings></ext>"
+      "xml": "<ext uri=\"{78C0D931-6437-407d-A8EE-F0AAD7539E65}\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><x14:conditionalFormattings><x14:conditionalFormatting xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\"><x14:cfRule type=\"dataBar\" id=\"{9F0C2E1A-5B7D-4C3E-8A21-6D4F0B9E7C15}\"><x14:dataBar minLength=\"0\" maxLength=\"100\" gradient=\"0\" negativeBarColorSameAsPositive=\"0\" axisPosition=\"middle\"><x14:cfvo type=\"autoMin\"/><x14:cfvo type=\"autoMax\"/><x14:negativeFillColor rgb=\"FFFF0000\"/><x14:axisColor rgb=\"FF000000\"/></x14:dataBar></x14:cfRule><xm:sqref>F2:F5</xm:sqref></x14:conditionalFormatting><x14:conditionalFormatting xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\"><x14:cfRule type=\"iconSet\" priority=\"2\" id=\"{9F0C2E1A-5B7D-4C3E-8A21-6D4F0B9E7C16}\"><x14:iconSet iconSet=\"3Stars\" custom=\"1\"><x14:cfvo type=\"percent\"><xm:f>0</xm:f></x14:cfvo><x14:cfvo type=\"percent\"><xm:f>33</xm:f></x14:cfvo><x14:cfvo type=\"percent\"><xm:f>67</xm:f></x14:cfvo><x14:cfIcon iconSet=\"3Flags\" iconId=\"0\"/><x14:cfIcon iconSet=\"NoIcons\" iconId=\"0\"/><x14:cfIcon iconSet=\"3Stars\" iconId=\"2\"/></x14:iconSet></x14:cfRule><xm:sqref>E2:E5</xm:sqref></x14:conditionalFormatting></x14:conditionalFormattings></ext>"
     },
     {
       "type": "data validation",
@@ -38,12 +38,21 @@
     },
     {
       "type": "sparklines",
-      "xml": "<ext uri=\"{05C60535-1F16-4fd2-B633-F4F36F0B64E0}\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><x14:sparklineGroups xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\"><x14:sparklineGroup lineWeight=\"1.5\" displayEmptyCellsAs=\"gap\" markers=\"1\"><x14:colorSeries rgb=\"FF376092\"/><x14:colorNegative rgb=\"FFD00000\"/><x14:colorAxis rgb=\"FF000000\"/><x14:colorMarkers rgb=\"FFD00000\"/><x14:colorFirst rgb=\"FFD00000\"/><x14:colorLast rgb=\"FFD00000\"/><x14:colorHigh rgb=\"FFD00000\"/><x14:colorLow rgb=\"FFD00000\"/><x14:sparklines><x14:sparkline><xm:f>Sales!B2:E2</xm:f><xm:sqref>G2</xm:sqref></x14:sparkline><x14:sparkline><xm:f>Sales!B3:E3</xm:f><xm:sqref>G3</xm:sqref></x14:sparkline><x14:sparkline><xm:f>Sales!B4:E4</xm:f><xm:sqref>G4</xm:sqref></x14:sparkline><x14:sparkline><xm:f>Sales!B5:E5</xm:f><xm:sqref>G5</xm:sqref></x14:sparkline></x14:sparklines></x14:sparklineGroup></x14:sparklineGroups></ext>"
+      "xml": "<ext uri=\"{05C60535-1F16-4fd2-B633-F4F36F0B64E0}\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><x14:sparklineGroups xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\"><x14:sparklineGroup lineWeight=\"1.5\" displayEmptyCellsAs=\"gap\" markers=\"1\"><x14:colorSeries rgb=\"FF376092\"/><x14:colorNegative rgb=\"FFD00000\"/><x14:colorAxis rgb=\"FF000000\"/><x14:colorMarkers rgb=\"FFD00000\"/><x14:colorFirst rgb=\"FFD00000\"/><x14:colorLast rgb=\"FFD00000\"/><x14:colorHigh rgb=\"FFD00000\"/><x14:colorLow rgb=\"FFD00000\"/><x14:sparklines><x14:sparkline><xm:f>Sales!B2:E2</xm:f><xm:sqref>G2</xm:sqref></x14:sparkline><x14:sparkline><xm:f>Sales!B3:E3</xm:f><xm:sqref>G3</xm:sqref></x14:sparkline><x14:sparkline><xm:f>Sales!B4:E4</xm:f><xm:sqref>G4</xm:sqref></x14:sparkline><x14:sparkline><xm:f>Sales!B5:E5</xm:f><xm:sqref>G5</xm:sqref></x14:sparkline></x14:sparklines></x14:sparklineGroup><x14:sparklineGroup type=\"column\" negative=\"1\" high=\"1\" displayEmptyCellsAs=\"gap\"><x14:colorSeries rgb=\"FF376092\"/><x14:colorNegative rgb=\"FFD00000\"/><x14:colorAxis rgb=\"FF000000\"/><x14:colorMarkers rgb=\"FFD00000\"/><x14:colorFirst rgb=\"FFD00000\"/><x14:colorLast rgb=\"FFD00000\"/><x14:colorHigh rgb=\"FFD00000\"/><x14:colorLow rgb=\"FFD00000\"/><x14:sparklines><x14:sparkline><xm:f>Sales!F2:F5</xm:f><xm:sqref>F7</xm:sqref></x14:sparkline></x14:sparklines></x14:sparklineGroup><x14:sparklineGroup type=\"stacked\" negative=\"1\" displayEmptyCellsAs=\"gap\"><x14:colorSeries rgb=\"FF376092\"/><x14:colorNegative rgb=\"FFD00000\"/><x14:colorAxis rgb=\"FF000000\"/><x14:colorMarkers rgb=\"FFD00000\"/><x14:colorFirst rgb=\"FFD00000\"/><x14:colorLast rgb=\"FFD00000\"/><x14:colorHigh rgb=\"FFD00000\"/><x14:colorLow rgb=\"FFD00000\"/><x14:sparklines><x14:sparkline><xm:f>Sales!F2:F5</xm:f><xm:sqref>F8</xm:sqref></x14:sparkline></x14:sparklines></x14:sparklineGroup></x14:sparklineGroups></ext>"
     }
   ],
   "threadedComments": [
     {"ref": "A3", "id": "{6D3A9E4C-2F5B-4C7D-9E8F-0A1B2C3D4E5F}", "personId": "{4B1E7C2A-0D3F-4A5B-9C6D-7E8F9A0B1C2D}", "dT": "2026-01-01T12:00:00.00", "text": "Is Q4 final?"},
-    {"ref": "A3", "id": "{7E4B0F5D-3A6C-4D8E-8F9A-1B2C3D4E5F60}", "parentId": "{6D3A9E4C-2F5B-4C7D-9E8F-0A1B2C3D4E5F}", "personId": "{5C2F8D3B-1E4A-4B6C-8D7E-9F0A1B2C3D4E}", "dT": "2026-01-02T09:30:00.00", "text": "Yes, checked twice."}
+    {"ref": "A3", "id": "{7E4B0F5D-3A6C-4D8E-8F9A-1B2C3D4E5F60}", "parentId": "{6D3A9E4C-2F5B-4C7D-9E8F-0A1B2C3D4E5F}", "personId": "{5C2F8D3B-1E4A-4B6C-8D7E-9F0A1B2C3D4E}", "dT": "2026-01-02T09:30:00.00", "text": "Yes, checked twice."},
+    {
+      "ref": "E4",
+      "id": "{8F5C1A6E-4B7D-4E9F-9A0B-2C3D4E5F6071}",
+      "personId": "{5C2F8D3B-1E4A-4B6C-8D7E-9F0A1B2C3D4E}",
+      "dT": "2026-01-03T11:00:00.00",
+      "done": "1",
+      "text": "@Olena Koval East grew again, please check Q4",
+      "xml": "<mentions xmlns=\"http://schemas.microsoft.com/office/spreadsheetml/2018/threadedcomments\"><mention mentionpersonId=\"{4B1E7C2A-0D3F-4A5B-9C6D-7E8F9A0B1C2D}\" mentionId=\"{9A6D2B7F-5C8E-4FA0-8B1C-3D4E5F607182}\" startIndex=\"0\" length=\"12\"/></mentions>"
+    }
   ],
   "xmlElements": [
     "<ignoredErrors xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><ignoredError sqref=\"K2\" numberStoredAsText=\"1\"/></ignoredErrors>"
@@ -84,7 +93,11 @@
     "B4": {"v": 60, "t": "n"},
     "C4": {"v": 75, "t": "n"},
     "D4": {"v": 95, "t": "n"},
-    "E4": {"v": 110, "t": "n"},
+    "E4": {
+      "v": 110,
+      "t": "n",
+      "comment": {"text": "[Threaded comment]\n\nComment:\n    @Olena Koval East grew again, please check Q4", "author": "tc={8F5C1A6E-4B7D-4E9F-9A0B-2C3D4E5F6071}"}
+    },
     "F4": {"t": "f", "f": "=E4-B4"},
     "H4": {"v": "Open", "t": "s"},
     "J4": {"v": "South", "t": "s"},
@@ -95,6 +108,8 @@
     "E5": {"v": 145, "t": "n"},
     "F5": {"t": "f", "f": "=E5-B5"},
     "H5": {"v": "Open", "t": "s"},
-    "J5": {"v": "West", "t": "s"}
+    "J5": {"v": "West", "t": "s"},
+    "A7": {"v": "Change (columns)", "t": "s"},
+    "A8": {"v": "Change (win/loss)", "t": "s"}
   }
 }

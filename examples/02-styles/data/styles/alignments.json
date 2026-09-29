@@ -3,5 +3,8 @@
   {"horizontal": "center", "vertical": "center"},
   {"horizontal": "center"},
   {"vertical": "top", "wrapText": true},
-  {"textRotation": 45}
+  {"textRotation": 45},
+  {"shrinkToFit": true, "indent": 2.0},
+  {"horizontal": "justify", "vertical": "bottom"},
+  {"textRotation": 255}
 ]

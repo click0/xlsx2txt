@@ -4,7 +4,7 @@ from click.testing import CliRunner
 
 from xlsx2txt.cli import main
 
-from tests.conftest import FIXTURES_DIR
+from tests.conftest import COMPLEX_XLSX, FIXTURES_DIR
 
 
 def run(*args):
@@ -18,11 +18,11 @@ def test_version():
 
 def test_export_import_verify(tmp_path):
     out_dir = tmp_path / "complex"
-    result = run("export", FIXTURES_DIR / "complex.xlsx", out_dir)
+    result = run("export", COMPLEX_XLSX, out_dir)
     assert result.exit_code == 0, result.output
     assert "1 sheet(s)" in result.output
 
-    result = run("verify", out_dir, "--against", FIXTURES_DIR / "complex.xlsx")
+    result = run("verify", out_dir, "--against", COMPLEX_XLSX)
     assert result.exit_code == 0, result.output
     assert result.output.strip().endswith("OK")
 
@@ -33,7 +33,7 @@ def test_export_import_verify(tmp_path):
     result = run("import", out_dir)
     assert result.exit_code == 1 and "File exists" in result.output
 
-    result = run("diff", FIXTURES_DIR / "complex.xlsx", tmp_path / "complex.xlsx", "--ignore-cached")
+    result = run("diff", COMPLEX_XLSX, tmp_path / "complex.xlsx", "--ignore-cached")
     assert result.exit_code == 0, result.output
     assert "No differences" in result.output
 
@@ -64,7 +64,7 @@ def test_verify_reports_modified(tmp_path):
 
 
 def test_info(tmp_path):
-    result = run("info", FIXTURES_DIR / "complex.xlsx")
+    result = run("info", COMPLEX_XLSX)
     assert result.exit_code == 0, result.output
     assert "Data: range A1:D6, 19 cell(s), 4 formula(s), 1 merged range(s)" in result.output
 

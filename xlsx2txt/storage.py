@@ -7,6 +7,7 @@ Layout::
     data/sheets/_index.json
     data/sheets/<Sheet>.json
     data/styles/{fonts,fills,borders,alignments,protections,cellStyles}.json
+    data/styles/namedStyles.json   (optional, named styles other than Normal)
     data/theme/theme1.xml          (optional)
     data/media/image_<hash>.<ext>  (optional, images)
     data/pivots/*.xml              (optional, pivot tables and their caches)
@@ -155,6 +156,8 @@ def write_model(model: dict[str, Any], out_dir: str | Path, force: bool = False)
     styles = model["styles"]
     for part in STYLE_PARTS + ["cellStyles"]:
         put_json(f"{STYLES_DIR}/{part}.json", styles.get(part, []))
+    if styles.get("namedStyles"):
+        put_json(f"{STYLES_DIR}/namedStyles.json", styles["namedStyles"])
 
     if model.get("theme"):
         files[THEME] = model["theme"].encode("utf-8")
@@ -230,6 +233,8 @@ def read_model(in_dir: str | Path) -> dict[str, Any]:
     styles = {}
     for part in STYLE_PARTS + ["cellStyles"]:
         styles[part] = _load_json(in_dir / STYLES_DIR / f"{part}.json")
+    if (in_dir / STYLES_DIR / "namedStyles.json").exists():
+        styles["namedStyles"] = _load_json(in_dir / STYLES_DIR / "namedStyles.json")
 
     theme_path = in_dir / THEME
     # Bytes, not read_text(): keep the original line endings of the theme XML.

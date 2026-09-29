@@ -1,5 +1,10 @@
 [
   {"name": "Orders", "file": "Orders.json"},
+  {"name": "Lookup", "file": "Lookup.json"},
+  {"name": "Jan", "file": "Jan.json"},
+  {"name": "Feb", "file": "Feb.json"},
+  {"name": "Mar", "file": "Mar.json"},
+  {"name": "Budget", "file": "Budget.json"},
   {"name": "Settings", "file": "Settings.json"},
   {"name": "Summary", "file": "Summary.json"}
 ]

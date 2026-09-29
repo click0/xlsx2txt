@@ -8,12 +8,12 @@ from xlsx2txt import diff_models, export_xlsx, load_model, verify_dir
 from xlsx2txt.compare import validate_model
 from xlsx2txt.storage import FormatError, check_checksums, dumps, read_model, sheet_file_names
 
-from tests.conftest import FIXTURES_DIR
+from tests.conftest import COMPLEX_XLSX, FIXTURES_DIR
 
 
 def test_layout(tmp_path):
     out_dir = tmp_path / "out"
-    export_xlsx(FIXTURES_DIR / "complex.xlsx", out_dir)
+    export_xlsx(COMPLEX_XLSX, out_dir)
     for rel in [
         "manifest.json", "data/workbook.json", "data/sheets/_index.json", "data/sheets/Data.json",
         "data/styles/fonts.json", "data/styles/cellStyles.json", "_verify/checksums.json",
@@ -25,7 +25,7 @@ def test_layout(tmp_path):
 
 def test_one_cell_per_line(tmp_path):
     out_dir = tmp_path / "out"
-    export_xlsx(FIXTURES_DIR / "complex.xlsx", out_dir)
+    export_xlsx(COMPLEX_XLSX, out_dir)
     text = (out_dir / "data/sheets/Data.json").read_text(encoding="utf-8")
     assert '    "D3": {"t": "f", "f": "=B3*C3"},\n' in text
 
@@ -42,8 +42,8 @@ def test_sheet_file_names():
 
 def test_verify_ok(tmp_path):
     out_dir = tmp_path / "out"
-    export_xlsx(FIXTURES_DIR / "complex.xlsx", out_dir)
-    report = verify_dir(out_dir, against=FIXTURES_DIR / "complex.xlsx")
+    export_xlsx(COMPLEX_XLSX, out_dir)
+    report = verify_dir(out_dir, against=COMPLEX_XLSX)
     assert report["ok"], report
 
 
@@ -77,8 +77,8 @@ def test_edited_directory_is_imported(tmp_path):
 
 
 def test_diff_reports_changes(tmp_path):
-    a = load_model(FIXTURES_DIR / "complex.xlsx")
-    b = load_model(FIXTURES_DIR / "complex.xlsx")
+    a = load_model(COMPLEX_XLSX)
+    b = load_model(COMPLEX_XLSX)
     cells = b["sheets"][0]["cells"]
     cells["B3"]["v"] = 101
     del cells["A5"]
@@ -124,7 +124,7 @@ def test_export_refuses_foreign_non_empty_dir(tmp_path):
 
 def test_reexport_removes_stale_sheet_files(tmp_path):
     out_dir = tmp_path / "out"
-    export_xlsx(FIXTURES_DIR / "complex.xlsx", out_dir)
+    export_xlsx(COMPLEX_XLSX, out_dir)
     export_xlsx(FIXTURES_DIR / "simple.xlsx", out_dir)
     assert not (out_dir / "data/sheets/Data.json").exists()
     assert verify_dir(out_dir)["ok"]

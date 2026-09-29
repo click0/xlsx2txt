@@ -25,7 +25,8 @@ Unlike simple text extractors, xlsx2txt preserves everything — formulas, style
 | Hyperlinks | ✅ |
 | Column widths / row heights, hidden & outline levels | ✅ |
 | Freeze panes, tab colors, hidden sheets | ✅ |
-| Auto filter, print settings, sheet protection | ✅ |
+| Auto filter, print settings (area, titles, headers/footers, page breaks), sheet and workbook protection | ✅ |
+| Named styles (the cell styles gallery, incl. localized "Normal") | ✅ (`data/styles/namedStyles.json`) |
 | Tables (ListObjects) | ✅ |
 | Conditional formatting | ✅ |
 | Data validation | ✅ |
@@ -125,7 +126,8 @@ report/
 │   │   ├── borders.json
 │   │   ├── alignments.json
 │   │   ├── protections.json
-│   │   └── cellStyles.json # Combinations referenced by cells ("s")
+│   │   ├── cellStyles.json # Combinations referenced by cells ("s")
+│   │   └── namedStyles.json # Named styles other than the default (optional)
 │   ├── theme/theme1.xml    # Workbook theme (theme colors)
 │   ├── media/              # Images, named by content hash
 │   ├── pivots/             # Pivot tables and their caches (XML)

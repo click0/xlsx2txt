@@ -1,0 +1,37 @@
+{
+  "name": "Budget",
+  "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
+  "usedRange": "A1:D7",
+  "dimensions": {"columns": {}, "rows": {}},
+  "mergedCells": [],
+  "print": {
+    "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
+  },
+  "tables": [
+    "<table id=\"2\" name=\"BudgetTable\" displayName=\"BudgetTable\" ref=\"A3:D7\" headerRowCount=\"1\" totalsRowCount=\"1\" xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><autoFilter ref=\"A3:D7\" /><tableColumns count=\"4\"><tableColumn id=\"1\" name=\"Column1\" totalsRowLabel=\"Total\" /><tableColumn id=\"2\" name=\"Column2\" totalsRowFunction=\"sum\" /><tableColumn id=\"3\" name=\"Column3\" totalsRowFunction=\"sum\" /><tableColumn id=\"4\" name=\"Column4\" totalsRowFunction=\"sum\" /></tableColumns><tableStyleInfo name=\"TableStyleLight9\" showRowStripes=\"1\" /></table>"
+  ],
+  "cells": {
+    "A1": {"v": "Quarter", "t": "s"},
+    "B1": {"t": "f", "f": "=SUM(Jan:Mar!B1)"},
+    "A3": {"v": "Item", "t": "s"},
+    "B3": {"v": "Plan", "t": "s"},
+    "C3": {"v": "Actual", "t": "s"},
+    "D3": {"v": "Delta", "t": "s"},
+    "A4": {"v": "Rent", "t": "s"},
+    "B4": {"v": 1000, "t": "n"},
+    "C4": {"v": 1000, "t": "n"},
+    "D4": {"t": "f", "f": "=BudgetTable[[#This Row],[Actual]]-BudgetTable[[#This Row],[Plan]]"},
+    "A5": {"v": "Staff", "t": "s"},
+    "B5": {"v": 5000, "t": "n"},
+    "C5": {"v": 5200, "t": "n"},
+    "D5": {"t": "f", "f": "=BudgetTable[[#This Row],[Actual]]-BudgetTable[[#This Row],[Plan]]"},
+    "A6": {"v": "Travel", "t": "s"},
+    "B6": {"v": 800, "t": "n"},
+    "C6": {"v": 650, "t": "n"},
+    "D6": {"t": "f", "f": "=BudgetTable[[#This Row],[Actual]]-BudgetTable[[#This Row],[Plan]]"},
+    "A7": {"v": "Total", "t": "s"},
+    "B7": {"t": "f", "f": "=SUBTOTAL(109,BudgetTable[Plan])"},
+    "C7": {"t": "f", "f": "=SUBTOTAL(109,BudgetTable[Actual])"},
+    "D7": {"t": "f", "f": "=SUBTOTAL(109,BudgetTable[Delta])"}
+  }
+}
