@@ -25,6 +25,20 @@ def resolve_style(styles: dict[str, Any], index: int | None) -> dict[str, Any]:
     style = cell_styles[index or 0]
     result = {key: styles[part][style[key]] for part, key in _PART_KEYS.items()}
     result["numFmt"] = style.get("numFmt", "General")
+    if style.get("style"):
+        result["namedStyle"] = style["style"]
+    return result
+
+
+def _named_styles(styles: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    result = {}
+    for entry in styles.get("namedStyles") or []:
+        resolved = {key: styles[part][entry[key]] for part, key in _PART_KEYS.items()}
+        resolved["numFmt"] = entry.get("numFmt", "General")
+        for key in ("builtinId", "hidden"):
+            if key in entry:
+                resolved[key] = entry[key]
+        result[entry["name"]] = resolved
     return result
 
 
@@ -193,6 +207,15 @@ def diff_models(a: dict[str, Any], b: dict[str, Any], ignore_cached: bool = Fals
     props_b = {k: v for k, v in wb_b.pop("properties", {}).items() if k not in VOLATILE_PROPERTIES}
     _diff_values("workbook.properties", props_a, props_b, out)
     _diff_values("workbook", wb_a, wb_b, out)
+    named_a = _named_styles(a["styles"])
+    named_b = _named_styles(b["styles"])
+    for name in list(named_a) + [n for n in named_b if n not in named_a]:
+        if name not in named_b:
+            out.append(f"style {name!r}: removed")
+        elif name not in named_a:
+            out.append(f"style {name!r}: added")
+        else:
+            _diff_values(f"style {name!r}", named_a[name], named_b[name], out)
 
     sheets_a = {s["name"]: s for s in a["sheets"]}
     sheets_b = {s["name"]: s for s in b["sheets"]}
@@ -254,11 +277,16 @@ def validate_model(model: dict[str, Any]) -> list[str]:
     errors = []
     styles = model.get("styles", {})
     cell_styles = styles.get("cellStyles", [])
+    named = {entry.get("name") for entry in styles.get("namedStyles") or []} | {"Normal"}
+    for kind, entries in (("cellStyles", cell_styles), ("namedStyles", styles.get("namedStyles") or [])):
+        for i, style in enumerate(entries):
+            for part, key in _PART_KEYS.items():
+                ref = style.get(key)
+                if not isinstance(ref, int) or not 0 <= ref < len(styles.get(part, [])):
+                    errors.append(f"{kind}[{i}].{key}: invalid reference {ref!r}")
     for i, style in enumerate(cell_styles):
-        for part, key in _PART_KEYS.items():
-            ref = style.get(key)
-            if not isinstance(ref, int) or not 0 <= ref < len(styles.get(part, [])):
-                errors.append(f"cellStyles[{i}].{key}: invalid reference {ref!r}")
+        if style.get("style") and style["style"] not in named:
+            errors.append(f"cellStyles[{i}].style: unknown named style {style['style']!r}")
 
     names = [s.get("name") for s in model.get("sheets", [])]
     chartsheet_names = [c.get("name") for c in model.get("workbook", {}).get("chartsheets", [])]

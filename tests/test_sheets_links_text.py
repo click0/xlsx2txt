@@ -24,7 +24,7 @@ from xlsx2txt.converter import roundtrip_diff
 from xlsx2txt.importer import _vba_archive
 from xlsx2txt.text import render_text
 
-from tests.conftest import FIXTURES_DIR
+from tests.conftest import COMPLEX_XLSX, FIXTURES_DIR
 
 
 @pytest.fixture
@@ -95,7 +95,7 @@ def test_render_text(linked_xlsx):
 
 
 def test_render_text_styles_and_details():
-    model = export_model(FIXTURES_DIR / "complex.xlsx")
+    model = export_model(COMPLEX_XLSX)
     text = render_text(model)
     assert "A1: 'Sales Report Q1 2025'  [font 14pt bold; align horizontal=center]" in text
     assert "merged A1:D1" in text
@@ -105,10 +105,10 @@ def test_render_text_styles_and_details():
 
 def test_cat_command_accepts_file_and_dir(tmp_path):
     runner = CliRunner()
-    from_file = runner.invoke(main, ["cat", str(FIXTURES_DIR / "complex.xlsx")])
+    from_file = runner.invoke(main, ["cat", str(COMPLEX_XLSX)])
     assert from_file.exit_code == 0, from_file.output
     out_dir = tmp_path / "complex"
-    export_xlsx(FIXTURES_DIR / "complex.xlsx", out_dir)
+    export_xlsx(COMPLEX_XLSX, out_dir)
     from_dir = runner.invoke(main, ["cat", str(out_dir)])
     assert from_dir.output == from_file.output
 
@@ -138,7 +138,7 @@ def test_git_textconv(tmp_path):
     run("git", "config", "user.name", "Test")
     run("git", "config", "diff.xlsx.textconv", f'"{sys.executable}" -m xlsx2txt.cli cat')
     (repo / ".gitattributes").write_text("*.xlsx diff=xlsx\n")
-    (repo / "report.xlsx").write_bytes((FIXTURES_DIR / "complex.xlsx").read_bytes())
+    (repo / "report.xlsx").write_bytes((COMPLEX_XLSX).read_bytes())
     run("git", "add", ".")
     run("git", "commit", "-qm", "init")
 

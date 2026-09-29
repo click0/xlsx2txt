@@ -3,8 +3,8 @@
   "formatVersion": 1,
   "generator": "xlsx2txt 0.7.0",
   "source": {"name": "03-formulas.xlsx", "type": "xlsx"},
-  "sheetCount": 3,
-  "cellCount": 39,
+  "sheetCount": 8,
+  "cellCount": 120,
   "hasVba": false,
   "warnings": []
 }

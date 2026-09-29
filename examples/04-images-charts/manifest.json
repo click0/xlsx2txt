@@ -3,8 +3,8 @@
   "formatVersion": 1,
   "generator": "xlsx2txt 0.7.0",
   "source": {"name": "04-images-charts.xlsx", "type": "xlsx"},
-  "sheetCount": 1,
-  "cellCount": 15,
+  "sheetCount": 2,
+  "cellCount": 36,
   "hasVba": false,
   "warnings": []
 }

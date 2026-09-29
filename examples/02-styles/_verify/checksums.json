@@ -1,16 +1,17 @@
 {
   "algorithm": "sha256",
   "files": {
-    "data/sheets/Styles.json": "650da1b3ea4b68e218d7f26d85bd6ac9acedbbe31920d27ac8a0845cb07e395b",
+    "data/sheets/Styles.json": "3a8edb01ed12e251cb451c818f07baf217dcb0d6737c561e05d8f84f8a14c504",
     "data/sheets/_index.json": "de1a3834384ef5718c375034ad76ab9bfc9c64d27c6db24d939032bd871d78a9",
-    "data/styles/alignments.json": "59ba9b1dd8b9c3cc101c675e9305b8bc9f66a3473b0210eae95f9e0782690bf8",
-    "data/styles/borders.json": "ece78589377dd4c4ad0854827588c57cb81122dbbfbdaf9b53e95726ec251e3a",
-    "data/styles/cellStyles.json": "6693be14c1740d9b81ab578d9fadbd269b0562373ccc97ba81e42101c5f80667",
-    "data/styles/fills.json": "e7442a31c3e23c1988453572c00cc06175453dac0d67e611706d93fba3ff7d9f",
-    "data/styles/fonts.json": "d4f7e0d1ae2add4030f9a9d9a7ce4c853514a5a76f120527d35008fbfe26ab3b",
-    "data/styles/protections.json": "1d78a8aa6f2b2591ac74758dce7b3d1147f845d6bd233ac3f95dcd0802d19291",
+    "data/styles/alignments.json": "d7776c0afecf0da28f165f7b6003c9effdbaa82a8f68cf376881a66794a12c23",
+    "data/styles/borders.json": "556e9490e4c5d69ca33fec608cdea5328eb12238213eeca92cc8cf4f26beb38f",
+    "data/styles/cellStyles.json": "3a2d05699aaf9e174cb99bb2e2b5bd8c910e5dd9885a6393686f4766463b6d2e",
+    "data/styles/fills.json": "28099d122cc8122655a2d65d02dfb19b3bd1aeb2a54224ebbb7463a7bdc0fca4",
+    "data/styles/fonts.json": "b324c71b1157b46f8d9b99935ab63aaa110be1f7e9c078bd4d236f74062caf34",
+    "data/styles/namedStyles.json": "e667e081e134105bfca623872489ccec09ac6945046b77e59ccf51afa08da93f",
+    "data/styles/protections.json": "1fb78fc2c6cac1dfddf322280f2b5547fc076d54abf544a9f7e7918cc91d7409",
     "data/theme/theme1.xml": "d15e8ebf78ef7b9720839d7ae8fdc81a7df5bc24706d8e137df61a5683c358d9",
     "data/workbook.json": "db7a3c10d59e46362f14bbbd01d6cd8dd77a0a6a0ccc11d533b889b2d0a394b3",
-    "manifest.json": "72cd23cae8f0b0135b0d9f2658bf710b2507dd6ac7654f089a79af21499d21ee"
+    "manifest.json": "c4779416abb6d05c6829b24c7b497dd616177e2910ae3f662c8637b47f532556"
   }
 }

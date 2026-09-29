@@ -4,7 +4,7 @@
   "generator": "xlsx2txt 0.7.0",
   "source": {"name": "05-rich-text.xlsx", "type": "xlsx"},
   "sheetCount": 1,
-  "cellCount": 3,
+  "cellCount": 11,
   "hasVba": false,
   "warnings": []
 }

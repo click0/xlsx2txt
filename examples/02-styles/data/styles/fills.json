@@ -1,5 +1,20 @@
 [
+  {"patternType": "solid", "fgColor": "FFE4DFEC"},
   {"patternType": null},
   {"patternType": "solid", "fgColor": "FF305496"},
-  {"patternType": "solid", "fgColor": "FFFFF2CC"}
+  {"patternType": "solid", "fgColor": "FFFFF2CC"},
+  {"patternType": "darkGrid", "fgColor": "FF9BC2E6", "bgColor": "FFFFFFFF"},
+  {
+    "gradient": "linear",
+    "degree": 90.0,
+    "stops": [{"position": 0.0, "color": "FFFFFFFF"}, {"position": 1.0, "color": "FF4472C4"}]
+  },
+  {
+    "gradient": "path",
+    "left": 0.5,
+    "right": 0.5,
+    "top": 0.5,
+    "bottom": 0.5,
+    "stops": [{"position": 0.0, "color": "FFFFFFFF"}, {"position": 1.0, "color": "FFED7D31"}]
+  }
 ]

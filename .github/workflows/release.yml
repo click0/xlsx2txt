@@ -109,8 +109,8 @@ jobs:
           python -m venv /tmp/venv
           /tmp/venv/bin/pip install dist/*.whl
           /tmp/venv/bin/xlsx2txt --version | grep -F "$VERSION"
-          /tmp/venv/bin/xlsx2txt export tests/fixtures/complex.xlsx /tmp/out
-          /tmp/venv/bin/xlsx2txt verify /tmp/out --against tests/fixtures/complex.xlsx
+          /tmp/venv/bin/xlsx2txt export examples/10-complex.xlsx /tmp/out
+          /tmp/venv/bin/xlsx2txt verify /tmp/out --against examples/10-complex.xlsx
 
       - uses: actions/upload-artifact@v4
         with:

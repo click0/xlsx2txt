@@ -8,7 +8,10 @@ from tests.create_fixtures import main as create_fixtures
 from tests.rich_workbook import build_rich_workbook
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
-REQUIRED = ["simple.xlsx", "styled.xlsx", "empty.xlsx", "formula.xlsx", "complex.xlsx"]
+EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
+# A richer workbook used by the CLI tests; it lives with the examples.
+COMPLEX_XLSX = EXAMPLES_DIR / "10-complex.xlsx"
+REQUIRED = ["simple.xlsx", "styled.xlsx", "empty.xlsx", "formula.xlsx"]
 
 
 def pytest_sessionstart(session):

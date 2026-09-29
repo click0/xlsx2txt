@@ -1,7 +1,7 @@
 {
   "name": "Data",
   "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
-  "usedRange": "A1:C5",
+  "usedRange": "A1:E7",
   "dimensions": {"columns": {}, "rows": {}},
   "mergedCells": [],
   "print": {
@@ -10,34 +10,74 @@
   "images": [
     {
       "file": "image_cc473ab7e0937390.png",
-      "anchor": {"type": "oneCell", "from": {"cell": "E1"}, "size": [1143000, 381000]}
+      "anchor": {"type": "oneCell", "from": {"cell": "H1"}, "size": [1143000, 381000]}
+    },
+    {
+      "file": "image_d3eb31aae48ad28c.jpeg",
+      "anchor": {"type": "oneCell", "from": {"cell": "K1", "offset": [95250, 0]}, "size": [571500, 571500]}
     }
   ],
   "charts": [
     {
-      "anchor": {"type": "oneCell", "from": {"cell": "E4"}, "size": [5400000, 2700000]},
-      "xml": "<chartSpace xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns=\"http://schemas.openxmlformats.org/drawingml/2006/chart\"><chart><title><tx><rich><a:bodyPr /><a:p><a:pPr><a:defRPr /></a:pPr><a:r><a:t>Revenue and costs</a:t></a:r></a:p></rich></tx></title><plotArea><barChart><barDir val=\"col\" /><grouping val=\"clustered\" /><ser><idx val=\"0\" /><order val=\"0\" /><tx><strRef><f>'Data'!B1</f></strRef></tx><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr><cat><numRef><f>'Data'!$A$2:$A$5</f></numRef></cat><val><numRef><f>'Data'!$B$2:$B$5</f></numRef></val></ser><ser><idx val=\"1\" /><order val=\"1\" /><tx><strRef><f>'Data'!C1</f></strRef></tx><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr><cat><numRef><f>'Data'!$A$2:$A$5</f></numRef></cat><val><numRef><f>'Data'!$C$2:$C$5</f></numRef></val></ser><gapWidth val=\"150\" /><axId val=\"10\" /><axId val=\"100\" /></barChart><catAx><axId val=\"10\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"100\" /><lblOffset val=\"100\" /></catAx><valAx><axId val=\"100\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorGridlines /><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"10\" /></valAx></plotArea><legend><legendPos val=\"r\" /></legend><plotVisOnly val=\"1\" /><dispBlanksAs val=\"gap\" /></chart></chartSpace>"
+      "anchor": {"type": "oneCell", "from": {"cell": "H4"}, "size": [5400000, 2700000]},
+      "xml": "<chartSpace xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns=\"http://schemas.openxmlformats.org/drawingml/2006/chart\"><chart><title><tx><rich><a:bodyPr /><a:p><a:pPr><a:defRPr /></a:pPr><a:r><a:t>Revenue and costs</a:t></a:r></a:p></rich></tx></title><plotArea><barChart><barDir val=\"col\" /><grouping val=\"clustered\" /><ser><idx val=\"0\" /><order val=\"0\" /><tx><strRef><f>'Data'!B1</f></strRef></tx><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr><cat><numRef><f>'Data'!$A$2:$A$7</f></numRef></cat><val><numRef><f>'Data'!$B$2:$B$7</f></numRef></val></ser><ser><idx val=\"1\" /><order val=\"1\" /><tx><strRef><f>'Data'!C1</f></strRef></tx><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr><cat><numRef><f>'Data'!$A$2:$A$7</f></numRef></cat><val><numRef><f>'Data'!$C$2:$C$7</f></numRef></val></ser><gapWidth val=\"150\" /><axId val=\"10\" /><axId val=\"100\" /></barChart><catAx><axId val=\"10\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"100\" /><lblOffset val=\"100\" /></catAx><valAx><axId val=\"100\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorGridlines /><title><tx><rich><a:bodyPr /><a:p><a:pPr><a:defRPr /></a:pPr><a:r><a:t>k UAH</a:t></a:r></a:p></rich></tx></title><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"10\" /></valAx></plotArea><legend><legendPos val=\"r\" /></legend><plotVisOnly val=\"1\" /><dispBlanksAs val=\"gap\" /></chart></chartSpace>"
     },
     {
-      "anchor": {"type": "oneCell", "from": {"cell": "E20"}, "size": [5400000, 2700000]},
-      "xml": "<chartSpace xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns=\"http://schemas.openxmlformats.org/drawingml/2006/chart\"><chart><title><tx><rich><a:bodyPr /><a:p><a:pPr><a:defRPr /></a:pPr><a:r><a:t>Revenue trend</a:t></a:r></a:p></rich></tx></title><plotArea><lineChart><grouping val=\"standard\" /><ser><idx val=\"0\" /><order val=\"0\" /><tx><strRef><f>'Data'!B1</f></strRef></tx><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr><marker><symbol val=\"none\" /><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr></marker><cat><numRef><f>'Data'!$A$2:$A$5</f></numRef></cat><val><numRef><f>'Data'!$B$2:$B$5</f></numRef></val></ser><axId val=\"10\" /><axId val=\"100\" /></lineChart><catAx><axId val=\"10\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"100\" /><lblOffset val=\"100\" /></catAx><valAx><axId val=\"100\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorGridlines /><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"10\" /></valAx></plotArea><legend><legendPos val=\"r\" /></legend><plotVisOnly val=\"1\" /><dispBlanksAs val=\"gap\" /></chart></chartSpace>"
+      "anchor": {"type": "oneCell", "from": {"cell": "P4"}, "size": [5400000, 2700000]},
+      "xml": "<chartSpace xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns=\"http://schemas.openxmlformats.org/drawingml/2006/chart\"><chart><title><tx><rich><a:bodyPr /><a:p><a:pPr><a:defRPr /></a:pPr><a:r><a:t>Stacked (horizontal)</a:t></a:r></a:p></rich></tx></title><plotArea><barChart><barDir val=\"bar\" /><grouping val=\"stacked\" /><ser><idx val=\"0\" /><order val=\"0\" /><tx><strRef><f>'Data'!B1</f></strRef></tx><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr><cat><numRef><f>'Data'!$A$2:$A$7</f></numRef></cat><val><numRef><f>'Data'!$B$2:$B$7</f></numRef></val></ser><ser><idx val=\"1\" /><order val=\"1\" /><tx><strRef><f>'Data'!C1</f></strRef></tx><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr><cat><numRef><f>'Data'!$A$2:$A$7</f></numRef></cat><val><numRef><f>'Data'!$C$2:$C$7</f></numRef></val></ser><gapWidth val=\"150\" /><overlap val=\"100\" /><axId val=\"10\" /><axId val=\"100\" /></barChart><catAx><axId val=\"10\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"100\" /><lblOffset val=\"100\" /></catAx><valAx><axId val=\"100\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorGridlines /><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"10\" /></valAx></plotArea><legend><legendPos val=\"r\" /></legend><plotVisOnly val=\"1\" /><dispBlanksAs val=\"gap\" /></chart></chartSpace>"
+    },
+    {
+      "anchor": {"type": "oneCell", "from": {"cell": "H20"}, "size": [5400000, 2700000]},
+      "xml": "<chartSpace xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns=\"http://schemas.openxmlformats.org/drawingml/2006/chart\"><chart><title><tx><rich><a:bodyPr /><a:p><a:pPr><a:defRPr /></a:pPr><a:r><a:t>Revenue trend</a:t></a:r></a:p></rich></tx></title><plotArea><lineChart><grouping val=\"standard\" /><ser><idx val=\"0\" /><order val=\"0\" /><tx><strRef><f>'Data'!B1</f></strRef></tx><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr><marker><symbol val=\"circle\" /><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr></marker><cat><numRef><f>'Data'!$A$2:$A$7</f></numRef></cat><val><numRef><f>'Data'!$B$2:$B$7</f></numRef></val><smooth val=\"1\" /></ser><axId val=\"10\" /><axId val=\"100\" /></lineChart><catAx><axId val=\"10\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"100\" /><lblOffset val=\"100\" /></catAx><valAx><axId val=\"100\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorGridlines /><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"10\" /></valAx></plotArea><legend><legendPos val=\"r\" /></legend><plotVisOnly val=\"1\" /><dispBlanksAs val=\"gap\" /></chart></chartSpace>"
+    },
+    {
+      "anchor": {"type": "oneCell", "from": {"cell": "P20"}, "size": [5400000, 2700000]},
+      "xml": "<chartSpace xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns=\"http://schemas.openxmlformats.org/drawingml/2006/chart\"><chart><title><tx><rich><a:bodyPr /><a:p><a:pPr><a:defRPr /></a:pPr><a:r><a:t>Costs (area)</a:t></a:r></a:p></rich></tx></title><plotArea><areaChart><grouping val=\"standard\" /><ser><idx val=\"0\" /><order val=\"0\" /><tx><strRef><f>'Data'!C1</f></strRef></tx><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr><cat><numRef><f>'Data'!$A$2:$A$7</f></numRef></cat><val><numRef><f>'Data'!$C$2:$C$7</f></numRef></val></ser><axId val=\"10\" /><axId val=\"100\" /></areaChart><catAx><axId val=\"10\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"100\" /><lblOffset val=\"100\" /></catAx><valAx><axId val=\"100\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorGridlines /><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"10\" /></valAx></plotArea><legend><legendPos val=\"r\" /></legend><plotVisOnly val=\"1\" /><dispBlanksAs val=\"gap\" /></chart></chartSpace>"
+    },
+    {
+      "anchor": {"type": "oneCell", "from": {"cell": "H36"}, "size": [5400000, 2700000]},
+      "xml": "<chartSpace xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns=\"http://schemas.openxmlformats.org/drawingml/2006/chart\"><chart><title><tx><rich><a:bodyPr /><a:p><a:pPr><a:defRPr /></a:pPr><a:r><a:t>Visitors vs revenue</a:t></a:r></a:p></rich></tx></title><plotArea><scatterChart><ser><idx val=\"0\" /><order val=\"0\" /><tx><v>Months</v></tx><spPr><a:ln><a:noFill /><a:prstDash val=\"solid\" /></a:ln></spPr><marker><symbol val=\"diamond\" /><size val=\"8\" /><spPr><a:solidFill><a:srgbClr val=\"4472C4\" /></a:solidFill><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr></marker><xVal><numRef><f>'Data'!$D$2:$D$7</f></numRef></xVal><yVal><numRef><f>'Data'!$B$2:$B$7</f></numRef></yVal></ser><axId val=\"10\" /><axId val=\"20\" /></scatterChart><valAx><axId val=\"10\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorGridlines /><title><tx><rich><a:bodyPr /><a:p><a:pPr><a:defRPr /></a:pPr><a:r><a:t>Visitors</a:t></a:r></a:p></rich></tx></title><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"20\" /></valAx><valAx><axId val=\"20\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorGridlines /><title><tx><rich><a:bodyPr /><a:p><a:pPr><a:defRPr /></a:pPr><a:r><a:t>Revenue</a:t></a:r></a:p></rich></tx></title><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"10\" /></valAx></plotArea><legend><legendPos val=\"r\" /></legend><plotVisOnly val=\"1\" /><dispBlanksAs val=\"gap\" /></chart></chartSpace>"
+    },
+    {
+      "anchor": {"type": "oneCell", "from": {"cell": "P36"}, "size": [5400000, 2700000]},
+      "xml": "<chartSpace xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns=\"http://schemas.openxmlformats.org/drawingml/2006/chart\"><chart><title><tx><rich><a:bodyPr /><a:p><a:pPr><a:defRPr /></a:pPr><a:r><a:t>Visitors and conversion</a:t></a:r></a:p></rich></tx></title><plotArea><barChart><barDir val=\"col\" /><grouping val=\"clustered\" /><ser><idx val=\"0\" /><order val=\"0\" /><tx><strRef><f>'Data'!D1</f></strRef></tx><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr><cat><numRef><f>'Data'!$A$2:$A$7</f></numRef></cat><val><numRef><f>'Data'!$D$2:$D$7</f></numRef></val></ser><gapWidth val=\"150\" /><axId val=\"10\" /><axId val=\"100\" /></barChart><lineChart><grouping val=\"standard\" /><ser><idx val=\"1\" /><order val=\"1\" /><tx><strRef><f>'Data'!E1</f></strRef></tx><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr><marker><symbol val=\"none\" /><spPr><a:ln><a:prstDash val=\"solid\" /></a:ln></spPr></marker><val><numRef><f>'Data'!$E$2:$E$7</f></numRef></val></ser><axId val=\"10\" /><axId val=\"200\" /></lineChart><catAx><axId val=\"10\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"100\" /><lblOffset val=\"100\" /></catAx><valAx><axId val=\"100\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorGridlines /><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"10\" /></valAx><valAx><axId val=\"200\" /><scaling><orientation val=\"minMax\" /></scaling><axPos val=\"l\" /><majorGridlines /><title><tx><rich><a:bodyPr /><a:p><a:pPr><a:defRPr /></a:pPr><a:r><a:t>Conversion</a:t></a:r></a:p></rich></tx></title><majorTickMark val=\"none\" /><minorTickMark val=\"none\" /><crossAx val=\"10\" /><crosses val=\"max\" /></valAx></plotArea><legend><legendPos val=\"r\" /></legend><plotVisOnly val=\"1\" /><dispBlanksAs val=\"gap\" /></chart></chartSpace>"
     }
   ],
   "cells": {
     "A1": {"v": "Month", "t": "s", "s": 1},
     "B1": {"v": "Revenue", "t": "s", "s": 1},
     "C1": {"v": "Costs", "t": "s", "s": 1},
+    "D1": {"v": "Visitors", "t": "s", "s": 1},
+    "E1": {"v": "Conversion", "t": "s", "s": 1},
     "A2": {"v": "Jan", "t": "s"},
     "B2": {"v": 42, "t": "n"},
     "C2": {"v": 30, "t": "n"},
+    "D2": {"v": 1200, "t": "n"},
+    "E2": {"v": 0.021, "t": "n"},
     "A3": {"v": "Feb", "t": "s"},
     "B3": {"v": 47, "t": "n"},
     "C3": {"v": 31, "t": "n"},
+    "D3": {"v": 1350, "t": "n"},
+    "E3": {"v": 0.024, "t": "n"},
     "A4": {"v": "Mar", "t": "s"},
     "B4": {"v": 51, "t": "n"},
     "C4": {"v": 35, "t": "n"},
+    "D4": {"v": 1600, "t": "n"},
+    "E4": {"v": 0.022, "t": "n"},
     "A5": {"v": "Apr", "t": "s"},
     "B5": {"v": 49, "t": "n"},
-    "C5": {"v": 33, "t": "n"}
+    "C5": {"v": 33, "t": "n"},
+    "D5": {"v": 1550, "t": "n"},
+    "E5": {"v": 0.026, "t": "n"},
+    "A6": {"v": "May", "t": "s"},
+    "B6": {"v": 58, "t": "n"},
+    "C6": {"v": 36, "t": "n"},
+    "D6": {"v": 1800, "t": "n"},
+    "E6": {"v": 0.027, "t": "n"},
+    "A7": {"v": "Jun", "t": "s"},
+    "B7": {"v": 63, "t": "n"},
+    "C7": {"v": 40, "t": "n"},
+    "D7": {"v": 2100, "t": "n"},
+    "E7": {"v": 0.025, "t": "n"}
   }
 }

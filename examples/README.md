@@ -6,15 +6,16 @@ what the text format looks like without running anything.
 
 | Example | What it shows |
 |---------|---------------|
-| `01-basic-data` | Values of every type (text, numbers, dates, booleans, Unicode), column widths, frozen header, auto filter |
-| `02-styles` | Fonts, fills, borders, alignment, number formats, merged cells, conditional formatting, data validation |
-| `03-formulas` | Formulas, array formula, named range, table, hidden sheet, cross-sheet references, comment, hyperlink |
-| `04-images-charts` | Image, bar and line charts on a sheet, chart sheet with a pie chart |
-| `05-rich-text` | Cells with several differently formatted runs of text |
-| `06-workbook-features` | Link to another workbook, custom document properties, sheet protection, a range with its own password, a custom view, "open as read-only" recommended, print settings, tab color |
-| `07-pivot-table` | Pivot table with its cache (`data/pivots/`) |
-| `08-shapes` | Text box, shapes with text, a connector arrow, a group, a shape behind a picture, a shape with a hyperlink and one filled with a picture; a sheet with shapes only |
-| `09-extensions` | Sparklines, a data bar with negative values, a drop-down list from another sheet, a threaded comment with a reply, a dynamic array formula, a switched-off error check |
+| `01-basic-data` | 40 rows and a second sheet with values of every type: numbers of all sizes and formats, dates, times, durations, booleans, an error, text in several scripts and with line breaks; column widths, a hidden column, grouped and hidden rows, frozen panes, auto filter |
+| `02-styles` | Fonts (underline, sub/superscript, theme colors with tint), solid/pattern/gradient fills, every border style incl. diagonal, alignment (indent, rotation, shrink), protection, many number formats, a named style, merged cells; conditional formatting (cell value, data bar, 3-color scale, icon set, formula, top-N, duplicates) and data validation (list, whole number, date, text length, custom formula); a protected sheet |
+| `03-formulas` | Arithmetic, lookups (VLOOKUP, INDEX/MATCH), SUMIFS/COUNTIF, text and date functions, IFERROR, cross-sheet and 3D references (`Jan:Mar`), an array formula, named ranges and constants (workbook and sheet scope), tables with a totals row and structured references, a hidden sheet, comments, external and internal hyperlinks |
+| `04-images-charts` | PNG and JPEG images with different anchors; clustered and stacked bar, line with markers, area, scatter, a bar/line combination with a secondary axis, a doughnut on another sheet; a chart sheet with a pie chart |
+| `05-rich-text` | Runs with bold, italic, (double) underline, strike, colors, fonts and sizes, super- and subscript, line breaks, several scripts; rich text in merged cells |
+| `06-workbook-features` | Link to another workbook, document and custom properties of every type, sheet and workbook protection, a range with its own password, a custom view, "open as read-only" recommended, printing (area, titles, headers and footers, page breaks, margins, options), zoom, gridlines, a right-to-left sheet, tab colors, hidden and very hidden sheets, a sheet-scoped name |
+| `07-pivot-table` | Two pivot tables on different sheets sharing one cache (`data/pivots/`) |
+| `08-shapes` | Text box, shapes with text, a connector arrow, a group, a shape behind a picture, a shape with a hyperlink, one filled with a picture, a rotated shape with a shadow, a callout layered between a chart and a picture; a sheet with shapes only |
+| `09-extensions` | Sparklines (line, column, win/loss), a data bar with negative values, an icon set with custom icons, a drop-down list from another sheet, threaded comments (a reply, a resolved thread with a mention), a dynamic array formula, a switched-off error check |
+| `10-complex` | A small sales report: merged title, bold headers, formulas with a total (used by the CLI tests) |
 
 Try it:
 

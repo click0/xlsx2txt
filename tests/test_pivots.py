@@ -5,8 +5,6 @@ from pathlib import Path
 
 import pytest
 from openpyxl import load_workbook
-from openpyxl.pivot.table import TableDefinition
-from openpyxl.xml.functions import fromstring, tostring
 
 from xlsx2txt import diff_models, export_model, export_xlsx, import_dir
 from xlsx2txt.compare import validate_model
@@ -25,23 +23,19 @@ def _generator():
 
 @pytest.fixture
 def pivot_xlsx(tmp_path):
+    """One pivot table (the example without its second sheet)."""
+    wb = _generator().pivot_table()
+    del wb["Summary"]
     path = tmp_path / "pivot.xlsx"
-    _generator().pivot_table().save(path)
+    wb.save(path)
     return path
 
 
 @pytest.fixture
 def two_pivots_xlsx(tmp_path):
-    """Two pivot tables on different sheets sharing one cache."""
-    wb = _generator().pivot_table()
-    first = wb["Data"]._pivots[0]
-    second = TableDefinition.from_tree(fromstring(tostring(first.to_tree())))
-    second.name = "Copy"
-    second.cache = first.cache
-    report = wb.create_sheet("Report")
-    report.add_pivot(second)
+    """The example: two pivot tables on different sheets sharing one cache."""
     path = tmp_path / "two.xlsx"
-    wb.save(path)
+    _generator().pivot_table().save(path)
     return path
 
 
@@ -82,7 +76,7 @@ def test_shared_cache_stored_once(two_pivots_xlsx, tmp_path):
     export_xlsx(two_pivots_xlsx, tmp_path / "out")
     import_dir(tmp_path / "out", restored)
     wb = load_workbook(restored)
-    assert [ws._pivots[0].name for ws in wb.worksheets] == ["Totals", "Copy"]
+    assert [ws._pivots[0].name for ws in wb.worksheets] == ["Totals", "Counts"]
     again = export_model(restored)
     assert sorted(again["pivots"]) == sorted(model["pivots"])  # still one shared cache
 

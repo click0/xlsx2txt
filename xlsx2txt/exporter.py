@@ -240,6 +240,33 @@ def _export_data_validations(ws) -> list[dict[str, Any]]:
     return result
 
 
+BREAK_ATTRS = ["id", "min", "max", "man", "pt"]
+BREAK_DEFAULTS = {"min": 0, "max": 16383, "man": True}
+WORKBOOK_PROTECTION_ATTRS = [
+    "workbookPassword", "workbookPasswordCharacterSet", "revisionsPassword", "revisionsPasswordCharacterSet",
+    "lockStructure", "lockWindows", "lockRevision", "revisionsAlgorithmName", "revisionsHashValue",
+    "revisionsSaltValue", "revisionsSpinCount", "workbookAlgorithmName", "workbookHashValue", "workbookSaltValue",
+    "workbookSpinCount",
+]
+
+
+def _export_header_footer(ws) -> dict[str, Any]:
+    """Page headers and footers: flags plus the text of each part, with
+    Excel's codes (&P page, &N pages, &D date, &F file, &A sheet...)."""
+    tree = ws.HeaderFooter.to_tree()
+    if tree is None:
+        return {}
+    result: dict[str, Any] = {}
+    for name in ("differentOddEven", "differentFirst", "scaleWithDoc", "alignWithMargins"):
+        value = getattr(ws.HeaderFooter, name)
+        if value is not None:
+            result[name] = bool(value)
+    for child in tree:
+        if child.text:
+            result[child.tag.rsplit("}", 1)[-1]] = child.text
+    return result
+
+
 def _export_sheet(ws, ws_values, styles: StyleTable) -> dict[str, Any]:
     sheet: dict[str, Any] = {"name": ws.title}
     if ws.sheet_state != "visible":
@@ -289,6 +316,13 @@ def _export_sheet(ws, ws_values, styles: StyleTable) -> dict[str, Any]:
         printing["options"] = options
     if ws.sheet_properties.pageSetUpPr is not None and ws.sheet_properties.pageSetUpPr.fitToPage:
         printing["fitToPage"] = True
+    header_footer = _export_header_footer(ws)
+    if header_footer:
+        printing["headerFooter"] = header_footer
+    breaks = {kind: [pick_attrs(b, BREAK_ATTRS, BREAK_DEFAULTS) for b in getattr(ws, f"{kind}_breaks").brk]
+              for kind in ("row", "col")}
+    if breaks["row"] or breaks["col"]:
+        printing["pageBreaks"] = {f"{kind}s": items for kind, items in breaks.items() if items}
     if printing:
         sheet["print"] = printing
 
@@ -430,6 +464,7 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
 
     styles = StyleTable()
     # Index 0 is the default style of the workbook.
+    styles.add_named(wb._named_styles)  # first: it tells the default style's (localized) name
     default_cell = OpenpyxlCell(wb.worksheets[0]) if wb.worksheets else None
     if default_cell is not None:
         styles.add(default_cell)
@@ -510,6 +545,9 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
     external_links = _export_external_links(wb)
     if external_links:
         workbook["externalLinks"] = external_links
+    protection = pick_attrs(wb.security, WORKBOOK_PROTECTION_ATTRS) if wb.security else {}
+    if protection:
+        workbook["protection"] = protection
     calc = pick_attrs(wb.calculation, CALC_ATTRS)
     if calc:
         workbook["calculation"] = calc

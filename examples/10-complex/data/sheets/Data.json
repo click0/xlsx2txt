@@ -1,0 +1,34 @@
+{
+  "name": "Data",
+  "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
+  "usedRange": "A1:D6",
+  "dimensions": {
+    "columns": {"A": {"width": 15.0}, "B": {"width": 10.0}, "C": {"width": 10.0}, "D": {"width": 12.0}},
+    "rows": {"1": {"height": 25.0}}
+  },
+  "mergedCells": ["A1:D1"],
+  "print": {
+    "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
+  },
+  "cells": {
+    "A1": {"v": "Sales Report Q1 2025", "t": "s", "s": 1},
+    "A2": {"v": "Product", "t": "s", "s": 2},
+    "B2": {"v": "Quantity", "t": "s", "s": 2},
+    "C2": {"v": "Price", "t": "s", "s": 2},
+    "D2": {"v": "Total", "t": "s", "s": 2},
+    "A3": {"v": "Widget", "t": "s"},
+    "B3": {"v": 100, "t": "n"},
+    "C3": {"v": 9.99, "t": "n"},
+    "D3": {"t": "f", "f": "=B3*C3"},
+    "A4": {"v": "Gadget", "t": "s"},
+    "B4": {"v": 50, "t": "n"},
+    "C4": {"v": 19.99, "t": "n"},
+    "D4": {"t": "f", "f": "=B4*C4"},
+    "A5": {"v": "Gizmo", "t": "s"},
+    "B5": {"v": 75, "t": "n"},
+    "C5": {"v": 14.99, "t": "n"},
+    "D5": {"t": "f", "f": "=B5*C5"},
+    "A6": {"v": "Total", "t": "s", "s": 2},
+    "D6": {"t": "f", "f": "=SUM(D3:D5)", "s": 2}
+  }
+}

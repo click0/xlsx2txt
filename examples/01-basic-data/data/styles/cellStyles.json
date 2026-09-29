@@ -2,5 +2,18 @@
   {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "General"},
   {"font": 1, "fill": 1, "border": 0, "alignment": 1, "protection": 0, "numFmt": "General"},
   {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "#,##0.00"},
-  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "yyyy-mm-dd"}
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "yyyy-mm-dd"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "#,##0;[Red]-#,##0"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "0"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "0.00E+00"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "# ?/?"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "0.00%"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "#,##0.00 \"₴\""},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "_-* #,##0.00_-;-* #,##0.00_-;_-* \"-\"??_-;_-@_-"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "dd.mm.yyyy"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "yyyy-mm-dd hh:mm:ss"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "hh:mm"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "[h]:mm"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 0, "protection": 0, "numFmt": "@"},
+  {"font": 0, "fill": 0, "border": 0, "alignment": 2, "protection": 0, "numFmt": "General"}
 ]

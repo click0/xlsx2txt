@@ -1,0 +1,22 @@
+{
+  "name": "Summary",
+  "format": {"baseColWidth": 8, "defaultRowHeight": 15.0},
+  "usedRange": "A1:B6",
+  "dimensions": {"columns": {}, "rows": {}},
+  "mergedCells": [],
+  "print": {
+    "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
+  },
+  "pivotTables": [{"table": "pivotTable2.xml", "cache": "pivotCache1"}],
+  "cells": {
+    "A1": {"v": "Orders per category (a second pivot table on the same cache)", "t": "s"},
+    "A3": {"v": "Row Labels", "t": "s"},
+    "B3": {"v": "Count of Amount", "t": "s"},
+    "A4": {"v": "Fruit", "t": "s"},
+    "B4": {"v": 2, "t": "n"},
+    "A5": {"v": "Veg", "t": "s"},
+    "B5": {"v": 2, "t": "n"},
+    "A6": {"v": "Grand Total", "t": "s"},
+    "B6": {"v": 4, "t": "n"}
+  }
+}
