@@ -26,8 +26,8 @@ from xlsx2txt.package import (
     unsupported_warnings,
 )
 from xlsx2txt.pivots import export_pivots
-from xlsx2txt.drawings import anchor_to_json, chart_to_json, extract_images, media_name
-from xlsx2txt.styles import StyleTable, color_to_json, dxf_to_json, rich_text_to_json
+from xlsx2txt.drawings import anchor_to_json, chart_space_settings, chart_to_json, extract_images, media_name
+from xlsx2txt.styles import StyleTable, color_to_json, dxf_to_json, referenced_dxfs, rich_text_to_json
 from xlsx2txt.vba import extract_vba_sources
 
 FORMAT_NAME = "xlsx2txt"
@@ -295,7 +295,13 @@ def _export_sheet(ws, ws_values, styles: StyleTable) -> dict[str, Any]:
     sheet["mergedCells"] = [str(rng) for rng in ws.merged_cells.ranges]
 
     if ws.auto_filter.ref:
-        sheet["autoFilter"] = ws.auto_filter.ref
+        auto_filter = ws.auto_filter
+        if auto_filter.filterColumn or auto_filter.sortState:
+            # Filter criteria, colour filters and the sort state, as XML.
+            sheet["autoFilter"] = {"ref": auto_filter.ref,
+                                   "xml": tostring(auto_filter.to_tree()).decode("utf-8")}
+        else:
+            sheet["autoFilter"] = auto_filter.ref
 
     printing: dict[str, Any] = {}
     if ws.print_area:
@@ -341,6 +347,14 @@ def _export_sheet(ws, ws_values, styles: StyleTable) -> dict[str, Any]:
         sheet["tables"] = [
             tostring(table.to_tree()).decode("utf-8") for table in ws.tables.values()
         ]
+    # Differential formats (bold header, red colour filter...) that tables and
+    # the auto filter refer to by number; the numbers change on import.
+    dxfs: dict[str, Any] = {}
+    filter_xml = sheet["autoFilter"]["xml"] if isinstance(sheet.get("autoFilter"), dict) else ""
+    for xml in sheet.get("tables", []) + [filter_xml]:
+        dxfs.update(referenced_dxfs(xml, ws.parent._differential_styles))
+    if dxfs:
+        sheet["dxfs"] = dict(sorted(dxfs.items(), key=lambda item: int(item[0])))
 
     local_names = _export_defined_names(ws.defined_names.values())
     if local_names:
@@ -468,6 +482,12 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
     default_cell = OpenpyxlCell(wb.worksheets[0]) if wb.worksheets else None
     if default_cell is not None:
         styles.add(default_cell)
+
+    chart_settings = chart_space_settings(path)
+    for sheet in wb.worksheets + wb.chartsheets:
+        for chart, settings in zip(sheet._charts, chart_settings.get(sheet.title, [])):
+            chart.style = settings["style"]
+            chart.roundedCorners = settings["roundedCorners"]
 
     images, warnings = extract_images(path)
     warnings.extend(unsupported_warnings(path, keep_vba=is_macro))

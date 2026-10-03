@@ -8,7 +8,7 @@
     "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
   },
   "tables": [
-    "<table id=\"2\" name=\"BudgetTable\" displayName=\"BudgetTable\" ref=\"A3:D7\" headerRowCount=\"1\" totalsRowCount=\"1\" xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><autoFilter ref=\"A3:D7\" /><tableColumns count=\"4\"><tableColumn id=\"1\" name=\"Column1\" totalsRowLabel=\"Total\" /><tableColumn id=\"2\" name=\"Column2\" totalsRowFunction=\"sum\" /><tableColumn id=\"3\" name=\"Column3\" totalsRowFunction=\"sum\" /><tableColumn id=\"4\" name=\"Column4\" totalsRowFunction=\"sum\" /></tableColumns><tableStyleInfo name=\"TableStyleLight9\" showRowStripes=\"1\" /></table>"
+    "<table id=\"2\" name=\"BudgetTable\" displayName=\"BudgetTable\" ref=\"A3:D7\" headerRowCount=\"1\" totalsRowCount=\"1\" xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><autoFilter ref=\"A3:D7\" /><tableColumns count=\"4\"><tableColumn id=\"1\" name=\"Item\" totalsRowLabel=\"Total\" /><tableColumn id=\"2\" name=\"Plan\" totalsRowFunction=\"sum\" /><tableColumn id=\"3\" name=\"Actual\" totalsRowFunction=\"sum\" /><tableColumn id=\"4\" name=\"Delta\" totalsRowFunction=\"sum\" /></tableColumns><tableStyleInfo name=\"TableStyleLight9\" showRowStripes=\"1\" /></table>"
   ],
   "cells": {
     "A1": {"v": "Quarter", "t": "s"},

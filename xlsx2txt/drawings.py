@@ -16,7 +16,7 @@ from openpyxl.drawing.spreadsheet_drawing import (
     TwoCellAnchor,
 )
 from openpyxl.drawing.xdr import XDRPoint2D, XDRPositiveSize2D
-from openpyxl.packaging.relationship import get_dependents, get_rels_path
+from openpyxl.packaging.relationship import get_dependents, get_rel, get_rels_path
 from openpyxl.reader.workbook import WorkbookParser
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
@@ -165,9 +165,45 @@ def chart_to_json(chart) -> dict[str, Any]:
 
 
 def chart_from_json(data: dict[str, Any]):
-    chart = read_chart(ChartSpace.from_tree(fromstring(data["xml"])))
+    space = ChartSpace.from_tree(fromstring(data["xml"]))
+    chart = read_chart(space)
+    # read_chart() drops these chart space settings.
+    chart.style = space.style
+    chart.roundedCorners = space.roundedCorners
     chart.anchor = anchor_from_json(data["anchor"])
     return chart
+
+
+def chart_space_settings(path) -> dict[str, list[dict[str, Any]]]:
+    """The chart style and rounded corners of every chart, per sheet, in the
+    order openpyxl reads the charts (its reader drops both settings; without
+    roundedCorners="0" Excel draws rounded corners)."""
+    result: dict[str, list[dict[str, Any]]] = {}
+    with zipfile.ZipFile(path) as archive:
+        names = set(archive.namelist())
+        parser = WorkbookParser(archive, "xl/workbook.xml")
+        parser.parse()
+        for sheet, rel in parser.find_sheets():
+            rels_path = get_rels_path(rel.target)
+            if rel.target not in names or rels_path not in names:
+                continue
+            for drawing_rel in get_dependents(archive, rels_path).find(SpreadsheetDrawing._rel_type):
+                if drawing_rel.target not in names:
+                    continue
+                try:
+                    drawing = SpreadsheetDrawing.from_tree(fromstring(archive.read(drawing_rel.target)))
+                except TypeError:
+                    continue
+                deps_path = get_rels_path(drawing_rel.target)
+                deps = get_dependents(archive, deps_path) if deps_path in names else []
+                for chart_rel in drawing._chart_rels:
+                    try:
+                        space = get_rel(archive, deps, chart_rel.id, ChartSpace)
+                    except TypeError:
+                        continue  # openpyxl skips such charts too
+                    result.setdefault(sheet.name, []).append(
+                        {"style": space.style, "roundedCorners": space.roundedCorners})
+    return result
 
 
 def chart_title(data: dict[str, Any]) -> str | None:
