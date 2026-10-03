@@ -51,7 +51,7 @@
 
 ```bash
 # останній реліз (підставте потрібну версію)
-pip install https://github.com/click0/xlsx2txt/releases/download/v0.7.0/xlsx2txt-0.7.0-py3-none-any.whl
+pip install https://github.com/click0/xlsx2txt/releases/download/v0.8.0/xlsx2txt-0.8.0-py3-none-any.whl
 
 # або поточна гілка main
 pip install git+https://github.com/click0/xlsx2txt.git
