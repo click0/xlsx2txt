@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-03
+
 ### Додано
 - Іменовані стилі (галерея стилів клітинок Excel) експортуються в
   `data/styles/namedStyles.json` і відновлюються, а клітинки зберігають
@@ -172,7 +174,8 @@
   контрольні суми SHA-256 у `_verify/`.
 - Випуск релізів через веб-інтерфейс GitHub.
 
-[Unreleased]: https://github.com/click0/xlsx2txt/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/click0/xlsx2txt/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/click0/xlsx2txt/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/click0/xlsx2txt/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/click0/xlsx2txt/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/click0/xlsx2txt/compare/v0.4.0...v0.5.0

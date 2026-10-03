@@ -1,6 +1,6 @@
 """xlsx2txt - Bidirectional Excel converter for Git version control."""
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 __author__ = "Vladyslav V. Prodan"
 
 from xlsx2txt.reader import read_cell, read_cell_style, read_sheet
