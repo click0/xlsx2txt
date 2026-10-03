@@ -178,6 +178,11 @@ error checks), `<protectedRanges>`, `<customSheetViews>`, `<sortState>`,
 `<fileSharing>` — and `extensions` in `workbook.json` the workbook's own
 Excel extensions.
 
+`autoFilter` is the filtered range, or `{"ref", "xml"}` when the filter has
+criteria, colour filters or a sort. Formats that tables and the filter refer
+to by number (a bold table header, a colour filter) are stored in the
+sheet's `dxfs`, so they still match after import.
+
 ## Git integration
 
 Let `git diff` show what changed inside `.xlsx` files, without exporting them:
@@ -207,8 +212,10 @@ git config diff.xlsx.textconv "xlsx2txt cat"
   `vba/modules/` are extracted for review and diffs only (install the `vba`
   extra: `pip install xlsx2txt[vba]`); editing them does not change the macros.
 - The calculation chain is not kept; Excel recreates it when the file is
-  opened. A hidden
-  column with width 0 comes back with the default width (it stays hidden).
+  opened.
+- Not kept on purpose, because Excel rewrites them on every save and they
+  would only add noise to diffs: the selected cell, window size and position,
+  the Excel build (`fileVersion`), the file's local path and revision ids.
 - Charts are stored as chart XML as understood by openpyxl; exotic chart
   features that openpyxl does not support may be lost.
 - The drawing order of shapes relative to pictures and charts is kept; pictures

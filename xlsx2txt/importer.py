@@ -19,6 +19,7 @@ from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.workbook.external_link.external import ExternalLink
 from openpyxl.workbook.protection import WorkbookProtection
 from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.worksheet.filters import AutoFilter
 from openpyxl.worksheet.formula import ArrayFormula, DataTableFormula
 from openpyxl.worksheet.header_footer import HeaderFooter
 from openpyxl.worksheet.hyperlink import Hyperlink
@@ -39,6 +40,7 @@ from xlsx2txt.styles import (
     dxf_from_json,
     fill_from_json,
     font_from_json,
+    renumber_dxfs,
 )
 
 EXTERNAL_LINK_PATH = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/externalLinkPath"
@@ -167,8 +169,15 @@ def _import_sheet(wb: Workbook, sheet: dict[str, Any], applier: StyleApplier,
     for coord, record in sheet.get("cells", {}).items():
         _write_cell(ws, coord, record, applier)
 
-    if sheet.get("autoFilter"):
-        ws.auto_filter.ref = sheet["autoFilter"]
+    # Differential formats tables and the auto filter refer to: add them to
+    # the workbook and renumber the references.
+    dxf_ids = {key: wb._differential_styles.add(dxf_from_json(data))
+               for key, data in (sheet.get("dxfs") or {}).items()}
+    auto_filter = sheet.get("autoFilter")
+    if isinstance(auto_filter, dict):
+        ws.auto_filter = AutoFilter.from_tree(fromstring(renumber_dxfs(auto_filter["xml"], dxf_ids)))
+    elif auto_filter:
+        ws.auto_filter.ref = auto_filter
 
     printing = sheet.get("print", {})
     if "area" in printing:
@@ -226,7 +235,7 @@ def _import_sheet(wb: Workbook, sheet: dict[str, Any], applier: StyleApplier,
         ws.add_pivot(pivots.table(entry))
 
     for xml in sheet.get("tables", []):
-        ws.add_table(Table.from_tree(fromstring(xml)))
+        ws.add_table(Table.from_tree(fromstring(renumber_dxfs(xml, dxf_ids))))
 
     for data in sheet.get("definedNames", []):
         ws.defined_names[data["name"]] = _defined_name(data)
@@ -397,5 +406,11 @@ def import_model(model: dict[str, Any], output: str | Path) -> Path:
         metadata=model.get("metadata"),
         workbook_elements=model["workbook"].get("xmlElements") or [],
         workbook_extensions=model["workbook"].get("extensions") or [],
+        zero_width_columns={
+            s["name"]: [data.get("min") or column_index_from_string(letter)
+                        for letter, data in s.get("dimensions", {}).get("columns", {}).items()
+                        if data.get("width") == 0]
+            for s in model["sheets"]
+        },
     )
     return output

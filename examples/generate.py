@@ -64,6 +64,7 @@ from openpyxl.styles import (
     Side,
 )
 from openpyxl.styles.differential import DifferentialStyle
+from openpyxl.styles.numbers import NumberFormat
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.workbook.protection import WorkbookProtection
 from openpyxl.workbook.external_link.external import (
@@ -76,6 +77,7 @@ from openpyxl.workbook.external_link.external import (
     ExternalSheetNames,
 )
 from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.worksheet.filters import ColorFilter, FilterColumn, Filters, SortCondition, SortState
 from openpyxl.worksheet.formula import ArrayFormula
 from openpyxl.worksheet.page import PageMargins
 from openpyxl.worksheet.pagebreak import Break
@@ -126,7 +128,7 @@ def _png(color, size) -> bytes:
 # Examples
 # ---------------------------------------------------------------------------
 
-def basic_data() -> Workbook:
+def basic_data() -> tuple[Workbook, dict]:
     """Values of every type on a larger sheet: numbers of all sizes, dates,
     times, durations, booleans, errors, text in several scripts; column
     widths, hidden and grouped rows and columns, frozen panes, a filter."""
@@ -155,7 +157,19 @@ def basic_data() -> Workbook:
         ws.row_dimensions[row].outline_level = 1
     ws.row_dimensions[25].hidden = True
     ws.freeze_panes = "B2"
+    # A filter with criteria (two categories, a colour filter on the code)
+    # and a sort by price, descending; the matching rows are hidden as Excel does.
     ws.auto_filter.ref = f"A1:H{ws.max_row}"
+    ws.auto_filter.filterColumn.append(FilterColumn(colId=1, filters=Filters(filter=["Hardware", "Services"])))
+    marked = wb._differential_styles.add(DifferentialStyle(fill=PatternFill("solid", bgColor="FFFFEB9C")))
+    ws.auto_filter.filterColumn.append(FilterColumn(colId=6, colorFilter=ColorFilter(dxfId=marked)))
+    ws.auto_filter.sortState = SortState(ref=f"A2:H{ws.max_row}", sortCondition=[
+        SortCondition(ref=f"D2:D{ws.max_row}", descending=True)])
+    for row in range(2, ws.max_row + 1):
+        if ws.cell(row, 2).value not in ("Hardware", "Services"):
+            ws.row_dimensions[row].hidden = True
+    ws.column_dimensions["I"].hidden = True
+    ws.column_dimensions["I"].width = 0  # hidden by dragging it to zero width
 
     values = wb.create_sheet("Values")
     _header(values, ["Kind", "Value", "Format"])
@@ -183,7 +197,7 @@ def basic_data() -> Workbook:
     values.column_dimensions["A"].width = 16
     values.column_dimensions["B"].width = 30
     values.column_dimensions["C"].width = 30
-    return wb
+    return wb, {"zero_width_columns": {"Sales": [9]}}  # openpyxl cannot write width 0
 
 
 def styles() -> Workbook:
@@ -333,6 +347,15 @@ def formulas() -> Workbook:
 
     table = Table(displayName="OrderList", ref=f"A1:E{last}")
     table.tableStyleInfo = TableStyleInfo(name="TableStyleMedium2", showRowStripes=True)
+    # Table formatting of its own (differential formats): a header font and a
+    # number format for the Total column.
+    table.headerRowDxfId = wb._differential_styles.add(DifferentialStyle(font=Font(b=True, color="FFFFFFFF")))
+    table._initialise_columns()
+    for column, cell in zip(table.tableColumns, ws[1]):
+        column.name = cell.value  # column names must match the header cells
+        if column.name == "Total":
+            column.dataDxfId = wb._differential_styles.add(DifferentialStyle(
+                numFmt=NumberFormat(numFmtId=164, formatCode="#,##0.00 [$UAH]")))
     ws.add_table(table)
 
     ws["A1"].comment = Comment("Product names come from the catalog", "Analyst")
@@ -385,7 +408,8 @@ def formulas() -> Workbook:
     totals = Table(displayName="BudgetTable", ref="A3:D7", totalsRowCount=1)
     totals.tableStyleInfo = TableStyleInfo(name="TableStyleLight9", showRowStripes=True)
     totals._initialise_columns()
-    for column, function in zip(totals.tableColumns, (None, "sum", "sum", "sum")):
+    for column, name, function in zip(totals.tableColumns, _header_row, (None, "sum", "sum", "sum")):
+        column.name = name  # column names must match the header cells
         if function:
             column.totalsRowFunction = function
         else:
@@ -492,6 +516,9 @@ def images_and_charts() -> Workbook:
     rate.y_axis.crosses = "max"
     combo += rate
     ws.add_chart(combo, "P36")
+
+    for chart in (bar, stacked, line, area, scatter, combo):
+        chart.roundedCorners = False  # as Excel writes it
 
     pie = PieChart()
     pie.title = "Revenue share"

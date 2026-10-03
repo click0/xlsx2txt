@@ -8,8 +8,12 @@
     "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
   },
   "tables": [
-    "<table id=\"1\" name=\"OrderList\" displayName=\"OrderList\" ref=\"A1:E7\" headerRowCount=\"1\" xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><autoFilter ref=\"A1:E7\" /><tableColumns count=\"5\"><tableColumn id=\"1\" name=\"Product\" /><tableColumn id=\"2\" name=\"Quantity\" /><tableColumn id=\"3\" name=\"Price\" /><tableColumn id=\"4\" name=\"Total\" /><tableColumn id=\"5\" name=\"Category\" /></tableColumns><tableStyleInfo name=\"TableStyleMedium2\" showRowStripes=\"1\" /></table>"
+    "<table id=\"1\" name=\"OrderList\" displayName=\"OrderList\" ref=\"A1:E7\" headerRowCount=\"1\" headerRowDxfId=\"0\" xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><autoFilter ref=\"A1:E7\" /><tableColumns count=\"5\"><tableColumn id=\"1\" name=\"Product\" /><tableColumn id=\"2\" name=\"Quantity\" /><tableColumn id=\"3\" name=\"Price\" /><tableColumn id=\"4\" name=\"Total\" dataDxfId=\"1\" /><tableColumn id=\"5\" name=\"Category\" /></tableColumns><tableStyleInfo name=\"TableStyleMedium2\" showRowStripes=\"1\" /></table>"
   ],
+  "dxfs": {
+    "0": {"font": {"bold": true, "color": "FFFFFFFF"}},
+    "1": {"numFmt": {"id": 164, "code": "#,##0.00 [$UAH]"}}
+  },
   "cells": {
     "A1": {
       "v": "Product",

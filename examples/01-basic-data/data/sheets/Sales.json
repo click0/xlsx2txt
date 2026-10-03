@@ -12,27 +12,35 @@
       "E": {"width": 12.0},
       "F": {"width": 10.0},
       "G": {"width": 8.0, "hidden": true},
-      "H": {"width": 16.0}
+      "H": {"width": 16.0},
+      "I": {"width": 0.0, "hidden": true}
     },
     "rows": {
+      "7": {"hidden": true},
       "12": {"outlineLevel": 1},
-      "13": {"outlineLevel": 1},
+      "13": {"hidden": true, "outlineLevel": 1},
       "14": {"outlineLevel": 1},
       "15": {"outlineLevel": 1},
       "16": {"outlineLevel": 1},
       "17": {"outlineLevel": 1},
       "18": {"outlineLevel": 1},
-      "19": {"outlineLevel": 1},
+      "19": {"hidden": true, "outlineLevel": 1},
       "20": {"outlineLevel": 1},
       "21": {"outlineLevel": 1},
-      "25": {"hidden": true}
+      "25": {"hidden": true},
+      "31": {"hidden": true},
+      "37": {"hidden": true}
     }
   },
   "mergedCells": [],
-  "autoFilter": "A1:H41",
+  "autoFilter": {
+    "ref": "A1:H41",
+    "xml": "<autoFilter ref=\"A1:H41\"><filterColumn colId=\"1\" hiddenButton=\"0\" showButton=\"1\"><filters><filter val=\"Hardware\" /><filter val=\"Services\" /></filters></filterColumn><filterColumn colId=\"6\" hiddenButton=\"0\" showButton=\"1\"><colorFilter dxfId=\"0\" /></filterColumn><sortState ref=\"A2:H41\"><sortCondition descending=\"1\" ref=\"D2:D41\" /></sortState></autoFilter>"
+  },
   "print": {
     "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
   },
+  "dxfs": {"0": {"fill": {"patternType": "solid", "bgColor": "FFFFEB9C"}}},
   "cells": {
     "A1": {"v": "Product", "t": "s", "s": 1},
     "B1": {"v": "Category", "t": "s", "s": 1},

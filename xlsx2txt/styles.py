@@ -1,6 +1,7 @@
 """Conversion of openpyxl style objects to/from JSON-friendly dicts."""
 
 import json
+import re
 from typing import Any
 
 from openpyxl.cell.cell import Cell
@@ -221,6 +222,26 @@ def dxf_to_json(dxf: DifferentialStyle | None) -> dict[str, Any] | None:
     if dxf.protection is not None:
         result["protection"] = protection_to_json(dxf.protection)
     return result
+
+
+# Attributes that point at a differential format (styles.xml <dxfs>): table
+# parts, auto filter colour filters and sort conditions.
+DXF_REF = re.compile(r'\b(dxfId|headerRowDxfId|dataDxfId|totalsRowDxfId|headerRowBorderDxfId'
+                     r'|tableBorderDxfId|totalsRowBorderDxfId)="(\d+)"')
+
+
+def referenced_dxfs(xml: str, differential_styles) -> dict[str, Any]:
+    """The differential formats an XML fragment refers to, by their id."""
+    result = {}
+    for _, dxf_id in DXF_REF.findall(xml):
+        index = int(dxf_id)
+        if dxf_id not in result and index < len(differential_styles.styles):
+            result[dxf_id] = dxf_to_json(differential_styles[index]) or {}
+    return result
+
+
+def renumber_dxfs(xml: str, mapping: dict[str, int]) -> str:
+    return DXF_REF.sub(lambda m: f'{m.group(1)}="{mapping.get(m.group(2), m.group(2))}"', xml)
 
 
 def dxf_from_json(data: dict[str, Any] | None) -> DifferentialStyle | None:

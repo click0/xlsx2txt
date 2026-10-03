@@ -29,7 +29,8 @@ pytest -q
 Example workbooks live in `examples/` (built by `examples/generate.py`, with
 their exports next to them); test-only data lives in `tests/fixtures/`.
 `tests/test_fidelity.py` compares every example with its round-trip directly
-through openpyxl: make new examples exercise what you add. After
+through openpyxl, and `tests/test_xml_paths.py` checks that no XML element or
+attribute vanishes: make new examples exercise what you add. After
 changing the export format or the examples, run `python examples/generate.py`
 and commit the result — `tests/test_examples.py` fails otherwise. Never commit
 users' own Excel files.

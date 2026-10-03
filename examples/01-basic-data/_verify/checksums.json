@@ -1,7 +1,7 @@
 {
   "algorithm": "sha256",
   "files": {
-    "data/sheets/Sales.json": "4b3308eec6d5ed96289d7c3ab8363074cd32b6cebb90833441453444e601eafe",
+    "data/sheets/Sales.json": "165b833017110f7da17c1187d49c34e793c5650ab3e2a89c8e4839a4dfb187ac",
     "data/sheets/Values.json": "027ee3f9fd477b78df8f5e4a18443c2227a166a895ac6b1346db40d09aacca09",
     "data/sheets/_index.json": "692542bac381a57bd5eed0e94f5e1cd219ec0d6d6a00d5783852b9812179c5ce",
     "data/styles/alignments.json": "406f2dc7b91cdf085237297623802dd6dd7b3ebe9544e52f202455e28ef47a8a",

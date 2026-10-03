@@ -6,6 +6,23 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 
 ## [Unreleased]
 
+### Fixed
+- Auto filter criteria, colour filters and the filter's sort state are kept
+  (`autoFilter` holds them as XML); only the range was kept before.
+- Formatting that tables and auto filters refer to (a table's header or
+  column formats, a colour filter) pointed at the wrong format after a
+  round-trip; the formats are now stored with the sheet (`dxfs`).
+- Chart styles and "no rounded corners" are kept: charts made in Excel came
+  back with rounded corners.
+- Hidden columns with width 0 keep width 0.
+- Example `03-formulas`: the budget table's column names now match its
+  header, which Excel requires (it would repair the file).
+
+### Added
+- `tests/test_xml_paths.py`: no XML element or attribute of an example may
+  vanish in a round-trip, apart from a short list of known, harmless
+  differences.
+
 ## [0.8.0] - 2026-10-03
 
 ### Added

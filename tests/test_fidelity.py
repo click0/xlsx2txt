@@ -47,13 +47,56 @@ def _cell(cell):
         "alignment": repr(cell.alignment),
         "protection": repr(cell.protection),
         "style": cell.style,
-        "comment": cell.comment.text if cell.comment else None,
-        "link": (cell.hyperlink.target, cell.hyperlink.location) if cell.hyperlink else None,
+        "comment": (cell.comment.text, cell.comment.author) if cell.comment else None,
+        "link": (cell.hyperlink.target, cell.hyperlink.location, cell.hyperlink.tooltip) if cell.hyperlink else None,
     }
 
 
+def _dxf(wb, dxf_id):
+    if dxf_id is None:
+        return None
+    styles = wb._differential_styles.styles
+    return repr(styles[dxf_id]) if dxf_id < len(styles) else f"missing {dxf_id}"
+
+
+def _resolve_dxfs(wb, xml):
+    """Replace dxf ids in XML by the formats they point at."""
+    import re
+    return re.sub(r'(\w*[dD]xfId)="(\d+)"', lambda m: f'{m.group(1)}="{_dxf(wb, int(m.group(2)))}"', xml)
+
+
+def _xml(obj):
+    from openpyxl.xml.functions import tostring
+    return tostring(obj.to_tree()).decode() if obj is not None else None
+
+
+def _rules(ws):
+    rules = []
+    for cf in ws.conditional_formatting:
+        for rule in cf.rules:
+            rules.append((str(cf.sqref), rule.type, rule.operator, rule.priority, tuple(rule.formula or ()),
+                          rule.stopIfTrue, rule.rank, rule.text, repr(rule.dxf), _xml(rule.colorScale),
+                          _xml(rule.dataBar), _xml(rule.iconSet)))
+    return sorted(rules, key=repr)
+
+
+def _validations(ws):
+    return sorted((str(dv.sqref), dv.type, dv.operator, dv.formula1, dv.formula2, dv.allow_blank,
+                   dv.showErrorMessage, dv.showInputMessage, dv.error, dv.errorTitle, dv.prompt, dv.promptTitle,
+                   dv.errorStyle) for dv in ws.data_validations.dataValidation)
+
+
 def _sheet(ws):
+    wb = ws.parent
     return {
+        "autoFilterXml": _resolve_dxfs(wb, _xml(ws.auto_filter)) if ws.auto_filter.ref else None,
+        "tableXml": sorted(_resolve_dxfs(wb, _xml(table)) for table in ws.tables.values()),
+        "rules": _rules(ws),
+        "validationDetails": _validations(ws),
+        "columnWidths": sorted((k, v.width if v.customWidth else None) for k, v in ws.column_dimensions.items()
+                               if v.customWidth),
+        "rowHeights": sorted((k, v.height) for k, v in ws.row_dimensions.items() if v.height),
+        "names": sorted((name, dn.attr_text) for name, dn in ws.defined_names.items()),
         "merged": sorted(map(str, ws.merged_cells.ranges)),
         "conditionalFormatting": sum(len(cf.rules) for cf in ws.conditional_formatting),
         "dataValidations": len(ws.data_validations.dataValidation),
@@ -63,7 +106,6 @@ def _sheet(ws):
         "pivots": len(ws._pivots),
         "freeze": ws.freeze_panes,
         "filter": ws.auto_filter.ref,
-        "names": sorted(ws.defined_names),
         "state": ws.sheet_state,
         "protection": repr(ws.protection),
         "hiddenColumns": sorted(k for k, v in ws.column_dimensions.items() if v.hidden),
@@ -86,7 +128,7 @@ def _workbook(wb):
     return {
         "sheets": wb.sheetnames,
         "chartsheets": [cs.title for cs in wb.chartsheets],
-        "names": sorted(wb.defined_names),
+        "names": sorted((name, dn.attr_text, dn.hidden) for name, dn in wb.defined_names.items()),
         "namedStyles": sorted(wb.named_styles),
         "properties": {name: getattr(wb.properties, name) for name in
                        ("title", "subject", "creator", "keywords", "category", "description")},
@@ -111,3 +153,20 @@ def test_example_fidelity(path, tmp_path):
         for row in ws.iter_rows():
             for cell in row:
                 assert _cell(other[cell.coordinate]) == _cell(cell), f"{ws.title}!{cell.coordinate}"
+
+
+@pytest.mark.parametrize("path", EXAMPLES, ids=lambda p: p.stem)
+def test_example_tables_are_valid(path):
+    """Excel repairs a file whose table column names differ from the header
+    cells, so the examples must get them right."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        wb = load_workbook(path)
+    for ws in wb.worksheets:
+        for table in ws.tables.values():
+            if not table.headerRowCount:
+                continue
+            header = next(ws.iter_rows(min_row=ws[table.ref][0][0].row, max_row=ws[table.ref][0][0].row,
+                                       min_col=ws[table.ref][0][0].column,
+                                       max_col=ws[table.ref][0][-1].column, values_only=True))
+            assert [c.name for c in table.tableColumns] == [str(v) for v in header], (ws.title, table.name)

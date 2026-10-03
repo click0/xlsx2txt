@@ -268,6 +268,25 @@ def _add_sheet_xml(parts, sheet_paths, sheet_elements: dict[str, list[str]],
         _add_override(parts, part, extensions.METADATA_TYPE)
 
 
+def _zero_width_columns(parts, sheet_paths, columns: dict[str, list[int]]) -> None:
+    """Hidden columns of width 0: openpyxl cannot write the width."""
+    for sheet_name, indexes in sorted(columns.items()):
+        if not indexes or sheet_name not in sheet_paths:
+            continue
+        wanted = {str(i) for i in indexes}
+        xml = parts[sheet_paths[sheet_name]].decode("utf-8")
+
+        def col(match: re.Match) -> str:
+            tag = match.group(0)
+            start = re.search(r'\bmin="(\d+)"', tag)
+            if not start or start.group(1) not in wanted:
+                return tag
+            tag = re.sub(r'\s(width|customWidth)="[^"]*"', "", tag)
+            end = len(tag) - (2 if tag.endswith("/>") else 1)
+            return f'{tag[:end].rstrip()} width="0" customWidth="1"{tag[end:]}'
+        parts[sheet_paths[sheet_name]] = re.sub(r"<(?:\w+:)?col\b[^>]*>", col, xml).encode("utf-8")
+
+
 def _add_workbook_xml(parts, workbook_elements: list[str], workbook_extensions: list[dict]) -> None:
     if not workbook_elements and not workbook_extensions:
         return
@@ -305,7 +324,8 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
                   cell_metadata: dict[str, dict[str, int]] | None = None,
                   metadata: str | None = None,
                   workbook_elements: list[str] | None = None,
-                  workbook_extensions: list[dict] | None = None) -> None:
+                  workbook_extensions: list[dict] | None = None,
+                  zero_width_columns: dict[str, list[int]] | None = None) -> None:
     """Add what openpyxl does not write to a file it saved (in place).
 
     ``printer_settings``: ``{sheet name: bytes}``; ``shapes``: ``{sheet name:
@@ -316,9 +336,12 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
     and ``metadata`` (the ``xl/metadata.xml`` part): see
     :mod:`xlsx2txt.extensions`; ``sheet_elements`` (``{sheet name: [XML]}``),
     ``workbook_elements`` (``[XML]``): see :mod:`xlsx2txt.elements`;
-    ``workbook_extensions``: the workbook's ``<extLst>`` entries.
+    ``workbook_extensions``: the workbook's ``<extLst>`` entries;
+    ``zero_width_columns``: ``{sheet name: [column index]}`` of hidden columns
+    with width 0.
     """
-    per_sheet = [shapes, sheet_extensions, cf_ids, sheet_threads, sheet_elements, cell_metadata]
+    per_sheet = [shapes, sheet_extensions, cf_ids, sheet_threads, sheet_elements, cell_metadata,
+                 zero_width_columns]
     whole = [printer_settings, persons, metadata, workbook_elements, workbook_extensions]
     if not any(whole) and not any(any(m.values()) for m in per_sheet if m):
         return
@@ -334,6 +357,7 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
     _add_threads(parts, sheet_paths, sheet_threads or {}, persons or [])
     _add_sheet_xml(parts, sheet_paths, sheet_elements or {}, cell_metadata or {}, metadata)
     _add_workbook_xml(parts, workbook_elements or [], workbook_extensions or [])
+    _zero_width_columns(parts, sheet_paths, zero_width_columns or {})
 
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as target_zip:
         # [Content_Types].xml first, as Office writes it.
