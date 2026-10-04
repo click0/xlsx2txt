@@ -1,7 +1,7 @@
 {
   "format": "xlsx2txt",
   "formatVersion": 1,
-  "generator": "xlsx2txt 0.8.0",
+  "generator": "xlsx2txt 0.9.1",
   "source": {"name": "06-workbook-features.xlsx", "type": "xlsx"},
   "sheetCount": 4,
   "cellCount": 91,
