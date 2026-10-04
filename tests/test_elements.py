@@ -129,3 +129,52 @@ def test_elements_in_diff_and_warnings(tmp_path):
         "workbook <fileSharing>: changed",
         "[Data] <cellWatches>: removed",
     ]
+
+
+VML = ('<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">'
+       '<v:shape id="CH"><v:imagedata o:relid="rId3" o:title="logo"/></v:shape></xml>')
+
+
+def test_background_and_header_pictures(tmp_path):
+    from xlsx2txt.compare import validate_model
+    from xlsx2txt.importer import import_model
+    from xlsx2txt.package import patch_package
+    from xlsx2txt.text import render_text
+
+    source = tmp_path / "background.xlsx"
+    wb = Workbook()
+    wb.active.title = "Data"
+    wb.active.oddHeader.center.text = "&G"
+    wb.save(source)
+    patch_package(source, backgrounds={"Data": "bg.png"}, media={"bg.png": b"\x89PNG fake", "logo.png": b"logo"},
+                  header_footer_pictures={"Data": {"xml": VML, "rels": {"rId3": {"type": "image",
+                                                                               "file": "logo.png"}}}})
+
+    model = export_model(source)
+    name = model["sheets"][0]["background"]
+    assert model["media"][name] == b"\x89PNG fake"
+    assert model["manifest"]["warnings"] == []
+    assert f"background picture: {name}" in render_text(model)
+    pictures = model["sheets"][0]["headerFooterPictures"]
+    logo = pictures["rels"]["rId1"]["file"]
+    assert model["media"][logo] == b"logo"
+    assert pictures["xml"] == VML.replace("rId3", "rId1")
+
+    restored = tmp_path / "restored.xlsx"
+    import_model(model, restored)
+    with zipfile.ZipFile(restored) as archive:
+        sheet = archive.read("xl/worksheets/sheet1.xml").decode()
+        rels = archive.read("xl/worksheets/_rels/sheet1.xml.rels").decode()
+        types = archive.read("[Content_Types].xml").decode()
+    assert '<picture r:id="' in sheet and "relationships/image" in rels
+    assert '<legacyDrawingHF r:id="' in sheet and "relationships/vmlDrawing" in rels
+    assert types.count('Extension="vml"') == 1
+    load_workbook(restored)
+    assert diff_models(model, export_model(restored)) == []
+
+    edited = export_model(restored)
+    del edited["sheets"][0]["background"]
+    assert diff_models(model, edited) == [f"[Data] background: {name!r} -> None"]
+    model["media"].clear()
+    assert validate_model(model) == [f"[Data] background picture not found: data/media/{name}",
+                                     f"[Data] header/footer picture not found: data/media/{logo}"]

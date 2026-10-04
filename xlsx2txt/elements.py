@@ -7,9 +7,10 @@ more. Those elements are kept as self-contained XML fragments (``xmlElements``
 of a sheet or of the workbook) and inserted back in the order the schema
 requires.
 
-Elements that refer to other parts through relationships (a background
-picture, pictures in the header or footer) cannot be kept this way; they are
-reported in the warnings instead.
+Elements that refer to other parts through relationships cannot be kept this
+way. A worksheet's background picture and the pictures in its header/footer
+are exported by :mod:`xlsx2txt.package` (``background``,
+``headerFooterPictures``); the others are reported in the warnings.
 """
 
 import re
@@ -69,10 +70,11 @@ def read(xml: str, kept: set[str]) -> tuple[list[str], list[str]]:
     return fragments, lost
 
 
-def linked(xml: str) -> list[str]:
-    """Descriptions of worksheet elements that use relationships and are lost."""
+def linked(xml: str, kept: set[str] = frozenset()) -> list[str]:
+    """Descriptions of worksheet elements that use relationships and are lost
+    (except the ``kept`` ones, which are exported another way)."""
     _, children = split_children(xml)
-    return [SHEET_LINKED[local_name(c)] for c in children if local_name(c) in SHEET_LINKED]
+    return [SHEET_LINKED[local_name(c)] for c in children if local_name(c) in set(SHEET_LINKED) - kept]
 
 
 def write(xml: str, fragments: list[str], order: list[str]) -> str:

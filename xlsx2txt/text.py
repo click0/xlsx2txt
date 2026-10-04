@@ -108,6 +108,10 @@ def render_text(model: dict[str, Any], styles: bool = True) -> str:
         lines.append(header + " ===")
         for rng in sheet.get("mergedCells", []):
             lines.append(f"merged {rng}")
+        if sheet.get("background"):
+            lines.append(f"background picture: {sheet['background']}")
+        for rel in (sheet.get("headerFooterPictures") or {}).get("rels", {}).values():
+            lines.append(f"header/footer picture: {rel.get('file')}")
         for image in sheet.get("images", []):
             anchor = image["anchor"]
             where = anchor.get("from", {}).get("cell", anchor.get("type"))

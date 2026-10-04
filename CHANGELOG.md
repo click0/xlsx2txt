@@ -6,6 +6,14 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 
 ## [Unreleased]
 
+### Added
+- A worksheet's background picture (Page Layout → Background) is kept:
+  `background` in the sheet file names the picture in `data/media/`. It was
+  dropped with a warning before.
+- Pictures in the page header/footer (`&G`) are kept: `headerFooterPictures`
+  in the sheet file holds their VML drawing, the pictures go to
+  `data/media/`.
+
 ## [0.9.1] - 2026-10-04
 
 ### Fixed

@@ -10,6 +10,7 @@
     "margins": {"left": 0.75, "right": 0.75, "top": 1.0, "bottom": 1.0, "header": 0.5, "footer": 0.5}
   },
   "definedNames": [{"name": "FirstContact", "value": "Contacts!$A$2"}],
+  "background": "image_876a396b3176fb74.png",
   "cells": {
     "A1": {"v": "Name", "t": "s"},
     "B1": {"v": "Phone", "t": "s"},

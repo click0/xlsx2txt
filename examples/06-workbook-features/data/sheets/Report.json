@@ -13,7 +13,7 @@
     "margins": {"left": 0.5, "right": 0.5, "top": 0.8, "bottom": 0.8, "header": 0.3, "footer": 0.3},
     "options": {"horizontalCentered": true, "gridLines": true},
     "fitToPage": true,
-    "headerFooter": {"oddHeader": "&C&F — &A&R&D", "oddFooter": "&LConfidential&CPage &P of &N"},
+    "headerFooter": {"oddHeader": "&L&G&C&F — &A&R&D", "oddFooter": "&LConfidential&CPage &P of &N"},
     "pageBreaks": {"rows": [{"id": 24}], "cols": [{"id": 1}]}
   },
   "protection": {"sheet": true, "objects": false, "scenarios": false, "formatCells": true, "formatRows": true, "formatColumns": false, "insertColumns": true, "insertRows": true, "insertHyperlinks": true, "deleteColumns": true, "deleteRows": true, "selectLockedCells": false, "selectUnlockedCells": false, "sort": false, "autoFilter": true, "pivotTables": true},
@@ -21,6 +21,10 @@
     "<protectedRanges xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><protectedRange sqref=\"B3\" name=\"Input\" algorithmName=\"SHA-512\" hashValue=\"Dg5gGu0VbAqKeUzRz6dHo9nJ0mkPzqtNUnvWIBNExmuYrfgjeRUvePjPH8zhL2CrYhhlymzCP9Pyo6EZAwN7Vw==\" saltValue=\"yMNjgUq6n7Hs2cRldfQ+Bg==\" spinCount=\"100000\"/></protectedRanges>",
     "<customSheetViews xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><customSheetView guid=\"{3F2504E0-4F89-11D3-9A0C-0305E82C3301}\" scale=\"120\" showGridLines=\"0\"><pageMargins left=\"0.7\" right=\"0.7\" top=\"0.75\" bottom=\"0.75\" header=\"0.3\" footer=\"0.3\"/></customSheetView></customSheetViews>"
   ],
+  "headerFooterPictures": {
+    "xml": "<xml xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:x=\"urn:schemas-microsoft-com:office:excel\">\n <o:shapelayout v:ext=\"edit\"><o:idmap v:ext=\"edit\" data=\"1\"/></o:shapelayout>\n <v:shapetype id=\"_x0000_t75\" coordsize=\"21600,21600\" o:spt=\"75\" o:preferrelative=\"t\" path=\"m@4@5l@4@11@9@11@9@5xe\" filled=\"f\" stroked=\"f\">\n  <v:stroke joinstyle=\"miter\"/>\n  <v:formulas>\n   <v:f eqn=\"if lineDrawn pixelLineWidth 0\"/>\n   <v:f eqn=\"sum @0 1 0\"/>\n   <v:f eqn=\"sum 0 0 @1\"/>\n   <v:f eqn=\"prod @2 1 2\"/>\n   <v:f eqn=\"prod @3 21600 pixelWidth\"/>\n   <v:f eqn=\"prod @3 21600 pixelHeight\"/>\n   <v:f eqn=\"sum @0 0 1\"/>\n   <v:f eqn=\"prod @6 1 2\"/>\n   <v:f eqn=\"prod @7 21600 pixelWidth\"/>\n   <v:f eqn=\"sum @8 21600 0\"/>\n   <v:f eqn=\"prod @7 21600 pixelHeight\"/>\n   <v:f eqn=\"sum @10 21600 0\"/>\n  </v:formulas>\n  <v:path o:extrusionok=\"f\" gradientshapeok=\"t\" o:connecttype=\"rect\"/>\n  <o:lock v:ext=\"edit\" aspectratio=\"t\"/>\n </v:shapetype>\n <v:shape id=\"LH\" o:spid=\"_x0000_s1025\" type=\"#_x0000_t75\" style=\"position:absolute;margin-left:0;margin-top:0;width:18pt;height:18pt;z-index:1\">\n  <v:imagedata o:relid=\"rId1\" o:title=\"logo\"/>\n  <o:lock v:ext=\"edit\" rotation=\"t\"/>\n </v:shape>\n</xml>\n",
+    "rels": {"rId1": {"type": "image", "file": "image_a1036494dcb5d1b8.png"}}
+  },
   "cells": {
     "A1": {"v": "Budget from another file", "t": "s"},
     "B1": {"t": "f", "f": "=[1]Budget!B2"},

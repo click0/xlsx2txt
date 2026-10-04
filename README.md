@@ -33,6 +33,7 @@ Unlike simple text extractors, xlsx2txt preserves everything — formulas, style
 | VBA macros (.xlsm) | ✅ (binary `vbaProject.bin` preserved, source code in `vba/modules/` for review) |
 | Rich text (formatted runs inside a cell) | ✅ |
 | Images | ✅ (stored in `data/media/`) |
+| Sheet background picture, pictures in the page header/footer | ✅ (`background` and `headerFooterPictures` in the sheet file, pictures in `data/media/`) |
 | Charts | ✅ (chart XML + anchor) |
 | Chart sheets | ✅ |
 | Shapes (text boxes, arrows, connectors, groups) | ✅ (drawing XML in the sheet file) |
@@ -204,9 +205,8 @@ git config diff.xlsx.textconv "xlsx2txt cat"
 ## Limitations
 
 - Not exported: SmartArt, slicers and timelines, form and ActiveX controls,
-  a sheet's background picture and pictures in its header/footer, embedded OLE
-  objects, data connections and Power Query, the data model, pictures in
-  cells. `export` and `info` warn about each of them (and about any other
+  embedded OLE objects, data connections and Power Query, the data model,
+  pictures in cells. `export` and `info` warn about each of them (and about any other
   part of the file they do not know), so nothing is lost silently.
 - VBA is restored from the binary `vbaProject.bin`. The sources in
   `vba/modules/` are extracted for review and diffs only (install the `vba`
