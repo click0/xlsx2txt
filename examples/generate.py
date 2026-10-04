@@ -594,12 +594,46 @@ def rich_text() -> Workbook:
     return wb
 
 
+# A picture in the left part of the page header (&G), as Excel stores it.
+HEADER_LOGO_VML = """<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" \
+xmlns:x="urn:schemas-microsoft-com:office:excel">
+ <o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout>
+ <v:shapetype id="_x0000_t75" coordsize="21600,21600" o:spt="75" o:preferrelative="t" \
+path="m@4@5l@4@11@9@11@9@5xe" filled="f" stroked="f">
+  <v:stroke joinstyle="miter"/>
+  <v:formulas>
+   <v:f eqn="if lineDrawn pixelLineWidth 0"/>
+   <v:f eqn="sum @0 1 0"/>
+   <v:f eqn="sum 0 0 @1"/>
+   <v:f eqn="prod @2 1 2"/>
+   <v:f eqn="prod @3 21600 pixelWidth"/>
+   <v:f eqn="prod @3 21600 pixelHeight"/>
+   <v:f eqn="sum @0 0 1"/>
+   <v:f eqn="prod @6 1 2"/>
+   <v:f eqn="prod @7 21600 pixelWidth"/>
+   <v:f eqn="sum @8 21600 0"/>
+   <v:f eqn="prod @7 21600 pixelHeight"/>
+   <v:f eqn="sum @10 21600 0"/>
+  </v:formulas>
+  <v:path o:extrusionok="f" gradientshapeok="t" o:connecttype="rect"/>
+  <o:lock v:ext="edit" aspectratio="t"/>
+ </v:shapetype>
+ <v:shape id="LH" o:spid="_x0000_s1025" type="#_x0000_t75" \
+style="position:absolute;margin-left:0;margin-top:0;width:18pt;height:18pt;z-index:1">
+  <v:imagedata o:relid="rId1" o:title="logo"/>
+  <o:lock v:ext="edit" rotation="t"/>
+ </v:shape>
+</xml>
+"""
+
+
 def workbook_features() -> tuple[Workbook, dict]:
     """Link to another workbook, document and custom properties of every type,
     sheet and workbook protection, printing (area, titles, headers/footers,
     page breaks, margins), views (zoom, gridlines, right-to-left), hidden and
     very hidden sheets, a sheet-scoped name, an editable range with its own
-    password, a custom view and "open as read-only" recommended."""
+    password, a custom view, a sheet background picture, a logo in the page
+    header and "open as read-only" recommended."""
     wb = _new_workbook("Workbook features")
     ws = wb.active
     ws.title = "Report"
@@ -640,6 +674,7 @@ def workbook_features() -> tuple[Workbook, dict]:
     ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.8, bottom=0.8, header=0.3, footer=0.3)
     ws.oddHeader.center.text = "&[File] — &[Tab]"
     ws.oddHeader.right.text = "&D"
+    ws.oddHeader.left.text = "&G"  # the logo, see HEADER_LOGO_VML
     ws.oddFooter.center.text = "Page &[Page] of &N"
     ws.oddFooter.left.text = "Confidential"
     ws.print_options.gridLines = True
@@ -681,6 +716,10 @@ def workbook_features() -> tuple[Workbook, dict]:
             'footer="0.3"/></customSheetView></customSheetViews>',
         ]},
         "workbook_elements": ['<fileSharing readOnlyRecommended="1"/>'],
+        "backgrounds": {"Contacts": "paper.png"},
+        "header_footer_pictures": {"Report": {"xml": HEADER_LOGO_VML,
+                                              "rels": {"rId1": {"type": "image", "file": "logo.png"}}}},
+        "media": {"paper.png": _png((250, 245, 230), (32, 32)), "logo.png": _png((192, 0, 0), (24, 24))},
     }
 
 

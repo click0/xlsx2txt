@@ -322,6 +322,11 @@ def validate_model(model: dict[str, Any]) -> list[str]:
             for rel in (shape.get("rels") or {}).values():
                 if not rel.get("external") and rel.get("file") not in media:
                     errors.append(f"[{sheet.get('name')}] shape {number}: file not found: data/media/{rel.get('file')}")
+        if sheet.get("background") and sheet["background"] not in media:
+            errors.append(f"[{sheet.get('name')}] background picture not found: data/media/{sheet['background']}")
+        for rel in (sheet.get("headerFooterPictures") or {}).get("rels", {}).values():
+            if rel.get("file") not in media:
+                errors.append(f"[{sheet.get('name')}] header/footer picture not found: data/media/{rel.get('file')}")
         for image in sheet.get("images", []):
             if image.get("file") not in media:
                 errors.append(f"[{sheet.get('name')}] image file not found: data/media/{image.get('file')}")

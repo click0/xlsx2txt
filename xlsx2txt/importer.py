@@ -412,5 +412,8 @@ def import_model(model: dict[str, Any], output: str | Path) -> Path:
                         if data.get("width") == 0]
             for s in model["sheets"]
         },
+        backgrounds={s["name"]: s["background"] for s in model["sheets"] if s.get("background")},
+        header_footer_pictures={s["name"]: s["headerFooterPictures"] for s in model["sheets"]
+                                if s.get("headerFooterPictures")},
     )
     return output

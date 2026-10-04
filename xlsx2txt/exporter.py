@@ -530,6 +530,14 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
             sheet["threadedComments"] = extras["threadedComments"]
         if extras.get("xmlElements"):
             sheet["xmlElements"] = extras["xmlElements"]
+        if extras.get("background"):
+            content, extension = extras["background"]
+            name = media_name(content, extension)
+            media[name] = content
+            sheet["background"] = name
+        if extras.get("headerFooterPictures"):
+            sheet["headerFooterPictures"], hf_media = extras["headerFooterPictures"]
+            media.update(hf_media)
         if metadata:
             for coord, cm in (extras.get("cellMetadata") or {}).items():
                 if coord in sheet["cells"]:

@@ -4,6 +4,8 @@
   archive and written back into the saved file.
 - Shapes are read from the drawings and written back into them
   (see :mod:`xlsx2txt.shapes`).
+- A worksheet's background picture and the VML drawing with the pictures of
+  its header/footer are read and written back.
 - Worksheet extensions (sparklines, extended conditional formatting and data
   validation, see :mod:`xlsx2txt.extensions`) and threaded comments (see
   :mod:`xlsx2txt.threads`) are read from the parts and written back.
@@ -23,6 +25,7 @@ from openpyxl.packaging.relationship import get_dependents, get_rels_path
 from openpyxl.reader.workbook import WorkbookParser
 
 from xlsx2txt import elements, extensions, threads
+from xlsx2txt.drawings import media_name
 from xlsx2txt.xmlfrag import insert_child
 from xlsx2txt.shapes import (
     EMPTY_DRAWING,
@@ -39,6 +42,13 @@ PRINTER_SETTINGS_REL = f"{REL_NS}/printerSettings"
 PRINTER_SETTINGS_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.printerSettings"
 DRAWING_REL = f"{REL_NS}/drawing"
 DRAWING_TYPE = "application/vnd.openxmlformats-officedocument.drawing+xml"
+IMAGE_REL = f"{REL_NS}/image"
+VML_REL = f"{REL_NS}/vmlDrawing"
+VML_TYPE = "application/vnd.openxmlformats-officedocument.vmlDrawing"
+_LEGACY_HF = re.compile(r"<(?:\w+:)?legacyDrawingHF\b[^>]*?\br:id=\"([^\"]+)\"")
+# Pictures in VML: <v:imagedata o:relid="rId1"/> (or r:id).
+_VML_REL = re.compile(r"\b(o:relid|r:id)=\"([^\"]*)\"")
+_PICTURE = re.compile(r"<(?:\w+:)?picture\b[^>]*?\br:id=\"([^\"]+)\"")
 
 
 def _sheet_paths(archive: zipfile.ZipFile) -> dict[str, str]:
@@ -60,6 +70,52 @@ def _sheet_drawings(archive: zipfile.ZipFile, names: set[str]) -> dict[str, list
         if drawings:
             result[sheet_name] = drawings
     return result
+
+
+def _background(archive: zipfile.ZipFile, names: set[str], sheet_path: str,
+                sheet_xml: str) -> tuple[bytes, str] | None:
+    """The background picture of a worksheet: ``(content, extension)``."""
+    match = _PICTURE.search(sheet_xml)
+    rels_path = get_rels_path(sheet_path)
+    if not match or rels_path not in names:
+        return None
+    for rel in get_dependents(archive, rels_path).find(IMAGE_REL):
+        if rel.Id == match.group(1) and rel.target in names and rel.TargetMode != "External":
+            return archive.read(rel.target), posixpath.splitext(rel.target)[1].lstrip(".") or "png"
+    return None
+
+
+def _header_footer_pictures(archive: zipfile.ZipFile, names: set[str], sheet_path: str,
+                            sheet_xml: str) -> tuple[dict, dict[str, bytes]] | None:
+    """Pictures in the header/footer of a worksheet: ``({"xml": VML, "rels":
+    {id: {"type": "image", "file": name}}}, media)``, or None if they cannot
+    be kept."""
+    match = _LEGACY_HF.search(sheet_xml)
+    rels_path = get_rels_path(sheet_path)
+    if not match or rels_path not in names:
+        return None
+    part = next((rel.target for rel in get_dependents(archive, rels_path).find(VML_REL)
+                 if rel.Id == match.group(1)), None)
+    if part not in names:
+        return None
+    try:
+        xml = archive.read(part).decode("utf-8")
+    except UnicodeDecodeError:  # kept as text; other encodings are reported instead
+        return None
+    part_rels_path = get_rels_path(part)
+    part_rels = ({rel.Id: rel for rel in get_dependents(archive, part_rels_path)}
+                 if part_rels_path in names else {})
+    rels: dict[str, dict] = {}
+    media: dict[str, bytes] = {}
+    for _, rel_id in _VML_REL.findall(xml):
+        rel = part_rels.get(rel_id)
+        if rel is None or rel.Type != IMAGE_REL or rel.TargetMode == "External" or rel.target not in names:
+            return None
+        content = archive.read(rel.target)
+        name = media_name(content, posixpath.splitext(rel.target)[1].lstrip(".") or "png")
+        media[name] = content
+        rels[rel_id] = {"type": "image", "file": name}
+    return {"xml": xml, "rels": rels}, media
 
 
 # ---------------------------------------------------------------------------
@@ -174,7 +230,7 @@ def _add_printer_settings(parts, sheet_paths, settings: dict[str, bytes]) -> Non
 _IMAGE_TYPES = {
     "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif", "bmp": "image/bmp",
     "tif": "image/tiff", "tiff": "image/tiff", "emf": "image/x-emf", "wmf": "image/x-wmf",
-    "svg": "image/svg+xml", "wdp": "image/vnd.ms-photo",
+    "svg": "image/svg+xml", "wdp": "image/vnd.ms-photo", "vml": VML_TYPE,
 }
 
 
@@ -268,6 +324,57 @@ def _add_sheet_xml(parts, sheet_paths, sheet_elements: dict[str, list[str]],
         _add_override(parts, part, extensions.METADATA_TYPE)
 
 
+def _add_backgrounds(parts, sheet_paths, backgrounds: dict[str, str], media: dict[str, bytes]) -> None:
+    for sheet_name, name in sorted(backgrounds.items()):
+        if not name:
+            continue
+        sheet_path = sheet_paths.get(sheet_name)
+        if sheet_path is None:
+            raise ValueError(f"no sheet named {sheet_name!r} for a background picture")
+        if name not in media:
+            raise ValueError(f"Sheet '{sheet_name}': missing background picture media/{name}")
+        extension = posixpath.splitext(name)[1].lstrip(".") or "png"
+        part = _free_part(parts, "xl/media/image{}." + extension)
+        parts[part] = media[name]
+        _ensure_default(parts, extension)
+        rel_id = _add_sheet_relationship(parts, sheet_path, IMAGE_REL, part)
+        after = set(elements.SHEET_ORDER[elements.SHEET_ORDER.index("picture") + 1:])
+        xml = insert_child(_declare_r(parts[sheet_path].decode("utf-8")), f'<picture r:id="{rel_id}"/>', after)
+        parts[sheet_path] = xml.encode("utf-8")
+
+
+def _add_header_footer_pictures(parts, sheet_paths, pictures: dict[str, dict], media: dict[str, bytes]) -> None:
+    for sheet_name, data in sorted(pictures.items()):
+        if not data:
+            continue
+        sheet_path = sheet_paths.get(sheet_name)
+        if sheet_path is None:
+            raise ValueError(f"no sheet named {sheet_name!r} for header/footer pictures")
+        part = _free_part(parts, "xl/drawings/vmlDrawingHF{}.vml")
+        rels_xml = _RELATIONSHIPS_EMPTY
+        mapping = {}
+        for old_id, rel in sorted((data.get("rels") or {}).items()):
+            name = rel["file"]
+            if name not in media:
+                raise ValueError(f"Sheet '{sheet_name}': missing header/footer picture media/{name}")
+            extension = posixpath.splitext(name)[1].lstrip(".") or "png"
+            media_part = _free_part(parts, "xl/media/image{}." + extension)
+            parts[media_part] = media[name]
+            _ensure_default(parts, extension)
+            target = posixpath.relpath(media_part, posixpath.dirname(part))
+            rels_xml, mapping[old_id] = _add_relationship(rels_xml, full_type(rel["type"]), target)
+        xml = _VML_REL.sub(lambda m: f'{m.group(1)}="{mapping.get(m.group(2), m.group(2))}"', data["xml"])
+        parts[part] = xml.encode("utf-8")
+        if mapping:
+            parts[get_rels_path(part)] = rels_xml.encode("utf-8")
+        _ensure_default(parts, "vml")
+        rel_id = _add_sheet_relationship(parts, sheet_path, VML_REL, part)
+        after = set(elements.SHEET_ORDER[elements.SHEET_ORDER.index("legacyDrawingHF") + 1:])
+        xml = insert_child(_declare_r(parts[sheet_path].decode("utf-8")), f'<legacyDrawingHF r:id="{rel_id}"/>',
+                           after)
+        parts[sheet_path] = xml.encode("utf-8")
+
+
 def _zero_width_columns(parts, sheet_paths, columns: dict[str, list[int]]) -> None:
     """Hidden columns of width 0: openpyxl cannot write the width."""
     for sheet_name, indexes in sorted(columns.items()):
@@ -325,7 +432,9 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
                   metadata: str | None = None,
                   workbook_elements: list[str] | None = None,
                   workbook_extensions: list[dict] | None = None,
-                  zero_width_columns: dict[str, list[int]] | None = None) -> None:
+                  zero_width_columns: dict[str, list[int]] | None = None,
+                  backgrounds: dict[str, str] | None = None,
+                  header_footer_pictures: dict[str, dict] | None = None) -> None:
     """Add what openpyxl does not write to a file it saved (in place).
 
     ``printer_settings``: ``{sheet name: bytes}``; ``shapes``: ``{sheet name:
@@ -338,10 +447,12 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
     ``workbook_elements`` (``[XML]``): see :mod:`xlsx2txt.elements`;
     ``workbook_extensions``: the workbook's ``<extLst>`` entries;
     ``zero_width_columns``: ``{sheet name: [column index]}`` of hidden columns
-    with width 0.
+    with width 0; ``backgrounds``: ``{sheet name: media name}`` of background
+    pictures; ``header_footer_pictures``: ``{sheet name: {"xml": VML,
+    "rels": {...}}}``.
     """
     per_sheet = [shapes, sheet_extensions, cf_ids, sheet_threads, sheet_elements, cell_metadata,
-                 zero_width_columns]
+                 zero_width_columns, backgrounds, header_footer_pictures]
     whole = [printer_settings, persons, metadata, workbook_elements, workbook_extensions]
     if not any(whole) and not any(any(m.values()) for m in per_sheet if m):
         return
@@ -358,6 +469,8 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
     _add_sheet_xml(parts, sheet_paths, sheet_elements or {}, cell_metadata or {}, metadata)
     _add_workbook_xml(parts, workbook_elements or [], workbook_extensions or [])
     _zero_width_columns(parts, sheet_paths, zero_width_columns or {})
+    _add_backgrounds(parts, sheet_paths, backgrounds or {}, media or {})
+    _add_header_footer_pictures(parts, sheet_paths, header_footer_pictures or {}, media or {})
 
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as target_zip:
         # [Content_Types].xml first, as Office writes it.
@@ -397,7 +510,9 @@ def extract_sheet_extras(path) -> tuple[dict[str, dict], list[dict]]:
     """Extensions, conditional formatting links and threaded comments.
 
     Returns ``({worksheet name: {"extensions": [...], "cfIds": {...},
-    "threadedComments": [...], "xmlElements": [...], "cellMetadata": {...}}},
+    "threadedComments": [...], "xmlElements": [...], "cellMetadata": {...},
+    "background": (bytes, extension) | None, "headerFooterPictures": ({...},
+    media) | None}},
     persons)``.
     """
     result: dict[str, dict] = {}
@@ -416,6 +531,8 @@ def extract_sheet_extras(path) -> tuple[dict[str, dict], list[dict]]:
                     if rel.target in names:
                         records.extend(threads.read_threads(archive.read(rel.target).decode("utf-8")))
             result[sheet_name] = {
+                "background": _background(archive, names, sheet_path, sheet_xml),
+                "headerFooterPictures": _header_footer_pictures(archive, names, sheet_path, sheet_xml),
                 "extensions": exts,
                 "cfIds": ids,
                 "threadedComments": records,
@@ -530,15 +647,20 @@ def unsupported_warnings(path, keep_vba: bool = False) -> list[str]:
             if sheet_path not in names:
                 continue
             xml = archive.read(sheet_path).decode("utf-8", errors="replace")
+            is_worksheet = sheet_path.startswith("xl/worksheets/")
             for description in sorted(set(extensions.read_sheet(xml)[2])):
                 warnings.append(f"Sheet '{sheet_name}': {description} are not exported")
-            for description in elements.linked(xml):
+            kept = set()
+            if is_worksheet and _background(archive, set(names), sheet_path, xml):
+                kept.add("picture")
+            if is_worksheet and _header_footer_pictures(archive, set(names), sheet_path, xml):
+                kept.add("legacyDrawingHF")
+            for description in elements.linked(xml, kept):
                 warnings.append(f"Sheet '{sheet_name}': {description} are not exported")
             for name in elements.read(xml, elements.SHEET_KEPT)[1]:
                 warnings.append(f"Sheet '{sheet_name}': <{name}> refers to other parts and is not exported")
             shapes = 0
             smart_art = False
-            is_worksheet = sheet_path.startswith("xl/worksheets/")
             for drawing_path in drawings.get(sheet_name, []):
                 drawing = archive.read(drawing_path).decode("utf-8", errors="replace")
                 if is_worksheet:
