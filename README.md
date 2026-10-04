@@ -51,7 +51,7 @@ Install it from GitHub:
 
 ```bash
 # latest release (replace the version with the one you need)
-pip install https://github.com/click0/xlsx2txt/releases/download/v0.8.0/xlsx2txt-0.8.0-py3-none-any.whl
+pip install https://github.com/click0/xlsx2txt/releases/download/v0.9.1/xlsx2txt-0.9.1-py3-none-any.whl
 
 # or the current main branch
 pip install git+https://github.com/click0/xlsx2txt.git

@@ -6,6 +6,8 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-10-04
+
 ### Fixed
 - Auto filter criteria, colour filters and the filter's sort state are kept
   (`autoFilter` holds them as XML); only the range was kept before.
@@ -186,7 +188,8 @@ First working version.
   checksums in `_verify/`.
 - Releases from the GitHub web interface.
 
-[Unreleased]: https://github.com/click0/xlsx2txt/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/click0/xlsx2txt/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/click0/xlsx2txt/compare/v0.8.0...v0.9.1
 [0.8.0]: https://github.com/click0/xlsx2txt/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/click0/xlsx2txt/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/click0/xlsx2txt/compare/v0.5.0...v0.6.0
