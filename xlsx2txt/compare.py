@@ -248,6 +248,13 @@ def diff_models(a: dict[str, Any], b: dict[str, Any], ignore_cached: bool = Fals
             state = "added" if name not in printer_a else "removed" if name not in printer_b else "changed"
             out.append(f"printer/{name}: {state}")
 
+    parts_a = a.get("chartParts") or {}
+    parts_b = b.get("chartParts") or {}
+    for name in sorted(set(parts_a) | set(parts_b)):
+        if parts_a.get(name) != parts_b.get(name):
+            state = "added" if name not in parts_a else "removed" if name not in parts_b else "changed"
+            out.append(f"charts/{name}: {state}")
+
     pivots_a = a.get("pivots") or {}
     pivots_b = b.get("pivots") or {}
     for name in sorted(set(pivots_a) | set(pivots_b)):
@@ -300,7 +307,8 @@ def validate_model(model: dict[str, Any]) -> list[str]:
     valid_types = {"s", "rs", "n", "b", "e", "d", "td", "f"}
     media = model.get("media") or {}
     pivots = model.get("pivots") or {}
-    for sheet in model.get("sheets", []):
+    chart_parts = model.get("chartParts") or {}
+    for sheet in model.get("sheets", []) + model.get("workbook", {}).get("chartsheets", []):
         printer_file = sheet.get("printerSettings")
         if printer_file and printer_file not in (model.get("printerSettings") or {}):
             errors.append(f"[{sheet.get('name')}] printer settings not found: data/printer/{printer_file}")
@@ -327,6 +335,11 @@ def validate_model(model: dict[str, Any]) -> list[str]:
         for rel in (sheet.get("headerFooterPictures") or {}).get("rels", {}).values():
             if rel.get("file") not in media:
                 errors.append(f"[{sheet.get('name')}] header/footer picture not found: data/media/{rel.get('file')}")
+        for number, chart in enumerate(sheet.get("charts", []), start=1):
+            for rel in (chart.get("rels") or {}).values():
+                folder, store = ("media", media) if rel.get("type") == "image" else ("charts", chart_parts)
+                if rel.get("file") not in store:
+                    errors.append(f"[{sheet.get('name')}] chart {number}: file not found: data/{folder}/{rel.get('file')}")
         for image in sheet.get("images", []):
             if image.get("file") not in media:
                 errors.append(f"[{sheet.get('name')}] image file not found: data/media/{image.get('file')}")

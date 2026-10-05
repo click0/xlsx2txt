@@ -415,5 +415,7 @@ def import_model(model: dict[str, Any], output: str | Path) -> Path:
         backgrounds={s["name"]: s["background"] for s in model["sheets"] if s.get("background")},
         header_footer_pictures={s["name"]: s["headerFooterPictures"] for s in model["sheets"]
                                 if s.get("headerFooterPictures")},
+        charts={s["name"]: s.get("charts", []) for s in model["sheets"] + model["workbook"].get("chartsheets", [])},
+        chart_parts=model.get("chartParts") or {},
     )
     return output

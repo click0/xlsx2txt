@@ -10,6 +10,12 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 - A worksheet's background picture (Page Layout → Background) is kept:
   `background` in the sheet file names the picture in `data/media/`. It was
   dropped with a warning before.
+- Charts are kept byte for byte: the chart XML as Excel stored it (in the
+  sheet file, as before) and the parts it uses — chart style and colors,
+  shapes drawn on the chart and its embedded data (`data/charts/`), pictures
+  (`data/media/`). Before, charts were rewritten as openpyxl understands
+  them and the style and colors parts, the Excel 2010 style and newer chart
+  extensions were dropped without a warning.
 - Pictures in the page header/footer (`&G`) are kept: `headerFooterPictures`
   in the sheet file holds their VML drawing, the pictures go to
   `data/media/`.

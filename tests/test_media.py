@@ -151,3 +151,86 @@ def test_vba_sources(tmp_path, monkeypatch):
     loaded = load_model(out_dir)
     assert loaded["vbaSources"] == model["vbaSources"]
     assert loaded["vba"] == {"xl/vbaProject.bin": b"dummy"}  # sources are not packed into the file
+
+
+def _chart_file(path, extra_rels):
+    """A workbook with one bar chart whose part has the given relationships
+    ``[(id, type, target, content or None for external)]``."""
+    import zipfile
+    from openpyxl import Workbook
+    from openpyxl.chart import BarChart, Reference
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Data"
+    for row in range(1, 4):
+        ws.append([row, row * 2])
+    chart = BarChart()
+    chart.add_data(Reference(ws, min_col=2, min_row=1, max_row=3))
+    ws.add_chart(chart, "D2")
+    wb.save(path)
+    with zipfile.ZipFile(path) as archive:
+        parts = {name: archive.read(name) for name in archive.namelist()}
+    rels = []
+    for rel_id, rel_type, target, content in extra_rels:
+        mode = ' TargetMode="External"' if content is None else ""
+        rels.append(f'<Relationship Id="{rel_id}" Type="{rel_type}" Target="{target}"{mode}/>')
+        if content is not None:
+            parts["xl/charts/" + target if not target.startswith("..") else "xl/" + target[3:]] = content
+    parts["xl/charts/_rels/chart1.xml.rels"] = (
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        + "".join(rels) + "</Relationships>").encode()
+    parts["xl/charts/chart1.xml"] = parts["xl/charts/chart1.xml"].replace(
+        b"</chartSpace>", b'<extLst><ext uri="{X}"><keep/></ext></extLst></chartSpace>')
+    with zipfile.ZipFile(path, "w") as archive:
+        for name, content in parts.items():
+            archive.writestr(name, content)
+
+
+def test_chart_kept_byte_for_byte(tmp_path):
+    import zipfile
+    from xlsx2txt.compare import validate_model
+    from xlsx2txt.drawings import CHART_RELS
+
+    source = tmp_path / "chart.xlsx"
+    _chart_file(source, [
+        ("rId1", CHART_RELS["chartStyle"], "style1.xml", b"<style/>"),
+        ("rId2", CHART_RELS["chartColorStyle"], "colors1.xml", b"<colors/>"),
+        ("rId3", CHART_RELS["package"], "../embeddings/Microsoft_Excel_Worksheet.xlsx", b"PK data"),
+    ])
+    with zipfile.ZipFile(source) as archive:
+        original = archive.read("xl/charts/chart1.xml").decode()
+    model = export_model(source)
+    assert model["manifest"]["warnings"] == []  # the embedded data is kept with the chart
+    chart = model["sheets"][0]["charts"][0]
+    assert chart["xml"] == original and "<keep/>" in original
+    assert {rel["type"] for rel in chart["rels"].values()} == {"chartStyle", "chartColorStyle", "package"}
+    assert sorted(model["chartParts"].values()) == [b"<colors/>", b"<style/>", b"PK data"]
+
+    out_dir = tmp_path / "out"
+    export_xlsx(source, out_dir)
+    assert len(list((out_dir / "data" / "charts").iterdir())) == 3
+    restored = tmp_path / "restored.xlsx"
+    import_dir(out_dir, restored)
+    with zipfile.ZipFile(restored) as archive:
+        assert archive.read("xl/charts/chart1.xml").decode() == original
+        rels = archive.read("xl/charts/_rels/chart1.xml.rels").decode()
+        types = archive.read("[Content_Types].xml").decode()
+        names = archive.namelist()
+    assert 'Id="rId3"' in rels and "relationships/package" in rels
+    assert "chartstyle+xml" in types and "chartcolorstyle+xml" in types and 'Extension="xlsx"' in types
+    assert any(n.startswith("xl/embeddings/") for n in names)
+    restored_model = export_model(restored)
+    assert diff_models(model, restored_model) == []
+
+    restored_model["chartParts"] = {}
+    assert len(validate_model(restored_model)) == 3
+
+
+def test_chart_with_unknown_part_falls_back(tmp_path):
+    source = tmp_path / "chart.xlsx"
+    _chart_file(source, [("rId1", "http://example.com/unknown", "http://example.com/x", None)])
+    model = export_model(source)
+    chart = model["sheets"][0]["charts"][0]
+    assert "rels" not in chart and "<keep/>" not in chart["xml"]
+    assert any("chart 1 is exported as openpyxl reads it" in w for w in model["manifest"]["warnings"])

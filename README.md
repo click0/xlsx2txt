@@ -34,7 +34,7 @@ Unlike simple text extractors, xlsx2txt preserves everything — formulas, style
 | Rich text (formatted runs inside a cell) | ✅ |
 | Images | ✅ (stored in `data/media/`) |
 | Sheet background picture, pictures in the page header/footer | ✅ (`background` and `headerFooterPictures` in the sheet file, pictures in `data/media/`) |
-| Charts | ✅ (chart XML + anchor) |
+| Charts | ✅ (chart XML byte for byte + anchor; chart styles, colors, shapes and embedded data in `data/charts/`) |
 | Chart sheets | ✅ |
 | Shapes (text boxes, arrows, connectors, groups) | ✅ (drawing XML in the sheet file) |
 | Sparklines, extended conditional formatting and data validation (Excel 2010+) | ✅ (`extensions` in the sheet file) |
@@ -131,6 +131,7 @@ report/
 │   │   └── namedStyles.json # Named styles other than the default (optional)
 │   ├── theme/theme1.xml    # Workbook theme (theme colors)
 │   ├── media/              # Images, named by content hash
+│   ├── charts/             # Chart styles, colors, shapes, embedded data
 │   ├── pivots/             # Pivot tables and their caches (XML)
 │   ├── printer/            # Printer driver settings of sheets (binary)
 │   └── metadata.xml        # Cell metadata (dynamic array formulas)
@@ -216,8 +217,9 @@ git config diff.xlsx.textconv "xlsx2txt cat"
 - Not kept on purpose, because Excel rewrites them on every save and they
   would only add noise to diffs: the selected cell, window size and position,
   the Excel build (`fileVersion`), the file's local path and revision ids.
-- Charts are stored as chart XML as understood by openpyxl; exotic chart
-  features that openpyxl does not support may be lost.
+- A chart is stored as openpyxl understands it (and `export` warns about it)
+  only when it refers to parts other than its style, colors, shapes,
+  embedded data and pictures; then features openpyxl does not know are lost.
 - The drawing order of shapes relative to pictures and charts is kept; pictures
   and charts among themselves are restored charts first.
 - Formula results are not recalculated; Excel recalculates them when the

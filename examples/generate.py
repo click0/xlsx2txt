@@ -437,10 +437,40 @@ def formulas() -> Workbook:
     return wb
 
 
-def images_and_charts() -> Workbook:
+# The default chart colors Excel stores next to a chart (xl/charts/colorsN.xml).
+CHART_COLORS = (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+    '<cs:colorStyle xmlns:cs="http://schemas.microsoft.com/office/drawing/2012/chartStyle" '
+    'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" meth="cycle" id="10">'
+    + "".join(f'<a:schemeClr val="accent{i}"/>' for i in range(1, 7))
+    + "<cs:variation/>"
+    + "".join(f"<cs:variation>{v}</cs:variation>" for v in (
+        '<a:lumMod val="60000"/>', '<a:lumMod val="80000"/><a:lumOff val="20000"/>', '<a:lumMod val="80000"/>',
+        '<a:lumMod val="60000"/><a:lumOff val="40000"/>', '<a:lumMod val="50000"/>',
+        '<a:lumMod val="70000"/><a:lumOff val="30000"/>', '<a:lumMod val="70000"/>',
+        '<a:lumMod val="50000"/><a:lumOff val="50000"/>'))
+    + "</cs:colorStyle>"
+)
+# What Excel adds to a chart and openpyxl does not read: the Excel 2010 chart
+# style and "show #N/A as an empty cell" (Excel 2016).
+CHART_STYLE_2010 = (
+    '<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">'
+    '<mc:Choice Requires="c14" xmlns:c14="http://schemas.microsoft.com/office/drawing/2007/8/2/chart">'
+    '<c14:style val="102"/></mc:Choice><mc:Fallback><style val="2"/></mc:Fallback></mc:AlternateContent>'
+)
+CHART_EXT_2016 = (
+    '<extLst><ext uri="{56B9EC1D-385E-4148-901F-78D8002777C0}" '
+    'xmlns:c16r3="http://schemas.microsoft.com/office/drawing/2017/03/chart">'
+    '<c16r3:dataDisplayOptions16><c16r3:dispNaAsBlank val="1"/></c16r3:dataDisplayOptions16></ext></extLst>'
+)
+
+
+def images_and_charts() -> tuple[Workbook, dict]:
     """Images (PNG and JPEG, different anchors) and charts of many types:
     clustered and stacked bars, lines with markers, area, scatter, doughnut,
-    a bar/line combination with a secondary axis; a chart sheet."""
+    a bar/line combination with a secondary axis; a chart sheet. The first
+    chart has what Excel stores and openpyxl does not read: a colors part, the
+    Excel 2010 style and an Excel 2016 extension."""
     wb = _new_workbook("Images and charts")
     ws = wb.active
     ws.title = "Data"
@@ -533,7 +563,16 @@ def images_and_charts() -> Workbook:
     report = wb.create_sheet("Report")
     report["A1"] = "A chart on another sheet, built from the Data sheet"
     report.add_chart(doughnut, "A3")
-    return wb
+
+    from xlsx2txt.drawings import chart_to_json
+
+    xml = chart_to_json(bar)["xml"]
+    xml = xml.replace('<roundedCorners val="0" />', '<roundedCorners val="0" />' + CHART_STYLE_2010, 1)
+    xml = xml.replace("</chartSpace>", CHART_EXT_2016 + "</chartSpace>", 1)
+    return wb, {
+        "charts": {"Data": [{"xml": xml, "rels": {"rId1": {"type": "chartColorStyle", "file": "colors.xml"}}}]},
+        "chart_parts": {"colors.xml": CHART_COLORS.encode()},
+    }
 
 
 def rich_text() -> Workbook:

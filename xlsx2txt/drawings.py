@@ -157,7 +157,17 @@ def build_image(content: bytes, anchor: dict[str, Any]):
 # Charts
 # ---------------------------------------------------------------------------
 
-def chart_to_json(chart) -> dict[str, Any]:
+def chart_to_json(chart, source: dict[str, Any] | None = None) -> dict[str, Any]:
+    """``source``: the chart as stored in the file (see extract_charts());
+    without it the chart is written as openpyxl understands it."""
+    if source and "xml" in source:
+        result = {"anchor": anchor_to_json(chart.anchor), "xml": source["xml"]}
+        if source["rels"]:
+            result["rels"] = source["rels"]
+        return result
+    if source:
+        chart.style = source["style"]
+        chart.roundedCorners = source["roundedCorners"]
     return {
         "anchor": anchor_to_json(chart.anchor),
         "xml": tostring(chart._write()).decode("utf-8"),
@@ -174,36 +184,113 @@ def chart_from_json(data: dict[str, Any]):
     return chart
 
 
-def chart_space_settings(path) -> dict[str, list[dict[str, Any]]]:
-    """The chart style and rounded corners of every chart, per sheet, in the
-    order openpyxl reads the charts (its reader drops both settings; without
-    roundedCorners="0" Excel draws rounded corners)."""
+# Parts a chart may use that are kept with it: short name -> relationship type.
+CHART_RELS = {
+    "chartStyle": "http://schemas.microsoft.com/office/2011/relationships/chartStyle",
+    "chartColorStyle": "http://schemas.microsoft.com/office/2011/relationships/chartColorStyle",
+    "chartUserShapes": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chartUserShapes",
+    "package": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package",
+    "image": IMAGE_NS,
+}
+# File name prefixes in data/charts/ (images go to data/media/).
+_CHART_PART_PREFIX = {"chartStyle": "style", "chartColorStyle": "colors", "chartUserShapes": "shapes",
+                      "package": "package"}
+
+
+def chart_part_name(kind: str, content: bytes, extension: str) -> str:
+    """Content-addressed file name of a part a chart uses."""
+    return f"{_CHART_PART_PREFIX[kind]}_{hashlib.sha256(content).hexdigest()[:16]}.{extension.lower()}"
+
+
+def _sheet_charts(archive: zipfile.ZipFile):
+    """Yield ``(sheet name, chart part, ChartSpace)`` for every chart, in the
+    order openpyxl reads them."""
+    names = set(archive.namelist())
+    parser = WorkbookParser(archive, "xl/workbook.xml")
+    parser.parse()
+    for sheet, rel in parser.find_sheets():
+        rels_path = get_rels_path(rel.target)
+        if rel.target not in names or rels_path not in names:
+            continue
+        for drawing_rel in get_dependents(archive, rels_path).find(SpreadsheetDrawing._rel_type):
+            if drawing_rel.target not in names:
+                continue
+            try:
+                drawing = SpreadsheetDrawing.from_tree(fromstring(archive.read(drawing_rel.target)))
+            except TypeError:
+                continue
+            deps_path = get_rels_path(drawing_rel.target)
+            deps = get_dependents(archive, deps_path) if deps_path in names else []
+            for chart_rel in drawing._chart_rels:
+                try:
+                    space = get_rel(archive, deps, chart_rel.id, ChartSpace)
+                except TypeError:
+                    continue  # openpyxl skips such charts too
+                yield sheet.name, deps.get(chart_rel.id).target, space
+
+
+def _chart_source(archive: zipfile.ZipFile, names: set[str], part: str,
+                  parts: dict[str, bytes], media: dict[str, bytes]) -> tuple[dict | None, str | None]:
+    """The chart XML as stored and the parts it uses: ``({"xml", "rels"},
+    None)``, or ``(None, reason)`` when it cannot be kept as it is."""
+    try:
+        xml = archive.read(part).decode("utf-8")
+    except UnicodeDecodeError:
+        return None, "its XML is not UTF-8"
+    rels: dict[str, dict] = {}
+    rels_path = get_rels_path(part)
+    kinds = {value: key for key, value in CHART_RELS.items()}
+    for rel in get_dependents(archive, rels_path) if rels_path in names else []:
+        kind = kinds.get(rel.Type)
+        if kind is None or rel.TargetMode == "External" or rel.target not in names:
+            return None, f"it refers to {rel.Type.rsplit('/', 1)[-1]} {rel.Target}"
+        if kind == "chartUserShapes" and get_rels_path(rel.target) in names \
+                and len(get_dependents(archive, get_rels_path(rel.target))):
+            return None, "its shapes refer to other parts"
+        content = archive.read(rel.target)
+        extension = posixpath.splitext(rel.target)[1].lstrip(".") or "xml"
+        if kind == "image":
+            name = media_name(content, extension)
+            media[name] = content
+        else:
+            name = chart_part_name(kind, content, extension)
+            parts[name] = content
+        rels[rel.Id] = {"type": kind, "file": name}
+    return {"xml": xml, "rels": rels}, None
+
+
+def extract_charts(path) -> tuple[dict[str, list[dict[str, Any]]], dict[str, bytes], dict[str, bytes],
+                                  set[str], list[str]]:
+    """Read every chart as stored in the file.
+
+    Returns ``({sheet name: [chart info, ...]}, chart parts, media, parts
+    kept, warnings)`` with one entry per chart, in the order openpyxl reads
+    them: ``{"xml", "rels"}`` (the chart XML byte for byte and the style,
+    colors, shapes, embedded data and pictures it uses), or ``{"style",
+    "roundedCorners"}`` for a chart that is exported as openpyxl reads it
+    (its reader drops both settings; without roundedCorners="0" Excel draws
+    rounded corners).
+    """
     result: dict[str, list[dict[str, Any]]] = {}
+    parts: dict[str, bytes] = {}
+    media: dict[str, bytes] = {}
+    kept: set[str] = set()
+    warnings: list[str] = []
     with zipfile.ZipFile(path) as archive:
         names = set(archive.namelist())
-        parser = WorkbookParser(archive, "xl/workbook.xml")
-        parser.parse()
-        for sheet, rel in parser.find_sheets():
-            rels_path = get_rels_path(rel.target)
-            if rel.target not in names or rels_path not in names:
+        for sheet_name, part, space in _sheet_charts(archive):
+            charts = result.setdefault(sheet_name, [])
+            source, reason = _chart_source(archive, names, part, parts, media)
+            if source is None:
+                warnings.append(f"Sheet '{sheet_name}': chart {len(charts) + 1} is exported as openpyxl reads it "
+                                f"({reason}); features openpyxl does not know are lost")
+                charts.append({"style": space.style, "roundedCorners": space.roundedCorners})
                 continue
-            for drawing_rel in get_dependents(archive, rels_path).find(SpreadsheetDrawing._rel_type):
-                if drawing_rel.target not in names:
-                    continue
-                try:
-                    drawing = SpreadsheetDrawing.from_tree(fromstring(archive.read(drawing_rel.target)))
-                except TypeError:
-                    continue
-                deps_path = get_rels_path(drawing_rel.target)
-                deps = get_dependents(archive, deps_path) if deps_path in names else []
-                for chart_rel in drawing._chart_rels:
-                    try:
-                        space = get_rel(archive, deps, chart_rel.id, ChartSpace)
-                    except TypeError:
-                        continue  # openpyxl skips such charts too
-                    result.setdefault(sheet.name, []).append(
-                        {"style": space.style, "roundedCorners": space.roundedCorners})
-    return result
+            rels_path = get_rels_path(part)
+            if rels_path in names:
+                kept.update(rel.target for rel in get_dependents(archive, rels_path))
+            charts.append(source)
+    return result, parts, media, kept, warnings
 
 
 def chart_title(data: dict[str, Any]) -> str | None:
