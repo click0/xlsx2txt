@@ -20,12 +20,13 @@ import re
 import zipfile
 from collections import Counter
 from pathlib import Path
+from xml.etree import ElementTree
 
 from openpyxl.packaging.relationship import get_dependents, get_rels_path
 from openpyxl.reader.workbook import WorkbookParser
 
 from xlsx2txt import elements, extensions, threads
-from xlsx2txt.drawings import media_name
+from xlsx2txt.drawings import CHART_RELS, media_name
 from xlsx2txt.xmlfrag import insert_child
 from xlsx2txt.shapes import (
     EMPTY_DRAWING,
@@ -231,6 +232,9 @@ _IMAGE_TYPES = {
     "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif", "bmp": "image/bmp",
     "tif": "image/tiff", "tiff": "image/tiff", "emf": "image/x-emf", "wmf": "image/x-wmf",
     "svg": "image/svg+xml", "wdp": "image/vnd.ms-photo", "vml": VML_TYPE,
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "xlsm": "application/vnd.ms-excel.sheet.macroEnabled.12",
+    "xlsb": "application/vnd.ms-excel.sheet.binary.macroEnabled.12",
 }
 
 
@@ -287,6 +291,72 @@ def _add_shapes(parts, sheet_paths, drawings, shapes: dict[str, list[dict]],
         if rels_xml != _RELATIONSHIPS_EMPTY:
             parts[rels_path] = rels_xml.encode("utf-8")
         parts[part] = add_to_drawing(parts[part].decode("utf-8"), placed).encode("utf-8")
+
+
+_CHART_PART_TYPES = {
+    "chartStyle": "application/vnd.ms-office.chartstyle+xml",
+    "chartColorStyle": "application/vnd.ms-office.chartcolorstyle+xml",
+    "chartUserShapes": "application/vnd.openxmlformats-officedocument.drawingml.chartshapes+xml",
+}
+_CHART_PART_NAMES = {
+    "chartStyle": "xl/charts/style{}.xml",
+    "chartColorStyle": "xl/charts/colors{}.xml",
+    "chartUserShapes": "xl/drawings/drawing{}.xml",
+}
+_CHART_REF = re.compile(r"<(?:\w+:)?chart\b[^>]*?\br:id=\"([^\"]+)\"")
+
+
+def _resolve(source: str, target: str) -> str:
+    if target.startswith("/"):
+        return target.lstrip("/")
+    return posixpath.normpath(posixpath.join(posixpath.dirname(source), target))
+
+
+def _add_chart_sources(parts, sheet_paths, drawings, charts: dict[str, list[dict]],
+                       chart_parts: dict[str, bytes], media: dict[str, bytes]) -> None:
+    """Replace the charts openpyxl wrote by the chart XML as exported, with the
+    parts it uses (style, colors, shapes, embedded data, pictures)."""
+    for sheet_name, sheet_charts in sorted(charts.items()):
+        if not sheet_charts or sheet_name not in drawings:
+            continue
+        drawing = drawings[sheet_name][0]
+        drawing_rels = get_rels_path(drawing)
+        if drawing_rels not in parts:
+            continue
+        targets = {rel.get("Id"): rel.get("Target") for rel in ElementTree.fromstring(parts[drawing_rels])}
+        chart_paths = [_resolve(drawing, targets[rel_id])
+                       for rel_id in _CHART_REF.findall(parts[drawing].decode("utf-8")) if rel_id in targets]
+        for chart, part in zip(sheet_charts, chart_paths):
+            if part not in parts or not chart.get("xml"):
+                continue
+            parts[part] = chart["xml"].encode("utf-8")
+            rels = chart.get("rels") or {}
+            if not rels:
+                continue
+            entries = []
+            for rel_id, rel in sorted(rels.items()):
+                kind, name = rel["type"], rel["file"]
+                store = media if kind == "image" else chart_parts
+                if name not in store:
+                    folder = "media" if kind == "image" else "charts"
+                    raise ValueError(f"Sheet '{sheet_name}': missing file {folder}/{name} of a chart")
+                extension = posixpath.splitext(name)[1].lstrip(".") or "xml"
+                if kind == "image":
+                    target_part = _free_part(parts, "xl/media/image{}." + extension)
+                elif kind == "package":
+                    target_part = _free_part(parts, "xl/embeddings/Microsoft_Excel_Worksheet{}." + extension)
+                else:
+                    target_part = _free_part(parts, _CHART_PART_NAMES[kind])
+                parts[target_part] = store[name]
+                if kind in _CHART_PART_TYPES:
+                    _add_override(parts, target_part, _CHART_PART_TYPES[kind])
+                else:
+                    _ensure_default(parts, extension)
+                target = posixpath.relpath(target_part, posixpath.dirname(part))
+                entries.append(f'<Relationship Id="{html.escape(rel_id)}" Type="{CHART_RELS[kind]}" '
+                               f'Target="{html.escape(target)}"/>')
+            parts[get_rels_path(part)] = _RELATIONSHIPS_EMPTY.replace(
+                "</Relationships>", "".join(entries) + "</Relationships>").encode("utf-8")
 
 
 def _add_extensions(parts, sheet_paths, sheet_extensions: dict[str, list[dict]],
@@ -434,7 +504,9 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
                   workbook_extensions: list[dict] | None = None,
                   zero_width_columns: dict[str, list[int]] | None = None,
                   backgrounds: dict[str, str] | None = None,
-                  header_footer_pictures: dict[str, dict] | None = None) -> None:
+                  header_footer_pictures: dict[str, dict] | None = None,
+                  charts: dict[str, list[dict]] | None = None,
+                  chart_parts: dict[str, bytes] | None = None) -> None:
     """Add what openpyxl does not write to a file it saved (in place).
 
     ``printer_settings``: ``{sheet name: bytes}``; ``shapes``: ``{sheet name:
@@ -449,10 +521,12 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
     ``zero_width_columns``: ``{sheet name: [column index]}`` of hidden columns
     with width 0; ``backgrounds``: ``{sheet name: media name}`` of background
     pictures; ``header_footer_pictures``: ``{sheet name: {"xml": VML,
-    "rels": {...}}}``.
+    "rels": {...}}}``; ``charts``: ``{sheet name: [chart, ...]}`` as exported
+    (the chart XML replaces what openpyxl wrote) with ``chart_parts``, the
+    files they use.
     """
     per_sheet = [shapes, sheet_extensions, cf_ids, sheet_threads, sheet_elements, cell_metadata,
-                 zero_width_columns, backgrounds, header_footer_pictures]
+                 zero_width_columns, backgrounds, header_footer_pictures, charts]
     whole = [printer_settings, persons, metadata, workbook_elements, workbook_extensions]
     if not any(whole) and not any(any(m.values()) for m in per_sheet if m):
         return
@@ -463,6 +537,7 @@ def patch_package(path, printer_settings: dict[str, bytes] | None = None,
         drawings = _sheet_drawings(source, set(parts))
 
     _add_printer_settings(parts, sheet_paths, printer_settings or {})
+    _add_chart_sources(parts, sheet_paths, drawings, charts or {}, chart_parts or {}, media or {})
     _add_shapes(parts, sheet_paths, drawings, shapes or {}, media or {})
     _add_extensions(parts, sheet_paths, sheet_extensions or {}, cf_ids or {})
     _add_threads(parts, sheet_paths, sheet_threads or {}, persons or [])
@@ -609,11 +684,12 @@ _LOST_PARTS = [
 _SMART_ART = re.compile(r"drawingml/2006/diagram")
 
 
-def unsupported_warnings(path, keep_vba: bool = False) -> list[str]:
+def unsupported_warnings(path, keep_vba: bool = False, kept_parts: set[str] = frozenset()) -> list[str]:
     """Describe everything in the file that the export does not keep.
 
     ``keep_vba``: the VBA project and ribbon customisation are exported
-    (macro-enabled workbooks).
+    (macro-enabled workbooks); ``kept_parts``: other parts that are exported
+    (e.g. the data embedded in a chart).
     """
     warnings: list[str] = []
     with zipfile.ZipFile(path) as archive:
@@ -622,7 +698,7 @@ def unsupported_warnings(path, keep_vba: bool = False) -> list[str]:
         unknown = []
         for name in names:
             # Folders and relationship files are covered by the parts they link.
-            if name.endswith("/") or name.endswith(".rels") or _KNOWN_PARTS.match(name):
+            if name.endswith("/") or name.endswith(".rels") or _KNOWN_PARTS.match(name) or name in kept_parts:
                 continue
             if name == "xl/metadata.xml" and _keeps_metadata(archive.read(name).decode("utf-8", errors="replace")):
                 continue

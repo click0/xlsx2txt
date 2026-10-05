@@ -26,7 +26,7 @@ from xlsx2txt.package import (
     unsupported_warnings,
 )
 from xlsx2txt.pivots import export_pivots
-from xlsx2txt.drawings import anchor_to_json, chart_space_settings, chart_to_json, extract_images, media_name
+from xlsx2txt.drawings import anchor_to_json, chart_to_json, extract_charts, extract_images, media_name
 from xlsx2txt.styles import StyleTable, color_to_json, dxf_to_json, referenced_dxfs, rich_text_to_json
 from xlsx2txt.vba import extract_vba_sources
 
@@ -395,7 +395,12 @@ def _export_custom_properties(wb) -> list[dict[str, Any]]:
     return result
 
 
-def _export_chartsheets(wb) -> list[dict[str, Any]]:
+def _charts_to_json(sheet, sources: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
+    found = sources.get(sheet.title, [])
+    return [chart_to_json(chart, found[i] if i < len(found) else None) for i, chart in enumerate(sheet._charts)]
+
+
+def _export_chartsheets(wb, chart_sources: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
     result = []
     for position, sheet in enumerate(wb._sheets):
         if sheet not in wb.chartsheets:
@@ -403,7 +408,7 @@ def _export_chartsheets(wb) -> list[dict[str, Any]]:
         data: dict[str, Any] = {"name": sheet.title, "position": position}
         if sheet.sheet_state != "visible":
             data["state"] = sheet.sheet_state
-        data["charts"] = [chart_to_json(chart) for chart in sheet._charts]
+        data["charts"] = _charts_to_json(sheet, chart_sources)
         result.append(data)
     return result
 
@@ -444,7 +449,8 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
     """Load an Excel file and convert it into the xlsx2txt model.
 
     The model is a plain dict with the keys ``manifest``, ``workbook``,
-    ``styles``, ``sheets``, ``theme``, ``vba``, ``vbaSources``, ``media`` and ``pivots``.
+    ``styles``, ``sheets``, ``theme``, ``vba``, ``vbaSources``, ``media``, ``pivots``,
+    ``printerSettings``, ``chartParts`` and ``metadata``.
 
     Args:
         path: Path to .xlsx / .xlsm file.
@@ -483,14 +489,10 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
     if default_cell is not None:
         styles.add(default_cell)
 
-    chart_settings = chart_space_settings(path)
-    for sheet in wb.worksheets + wb.chartsheets:
-        for chart, settings in zip(sheet._charts, chart_settings.get(sheet.title, [])):
-            chart.style = settings["style"]
-            chart.roundedCorners = settings["roundedCorners"]
-
+    chart_sources, chart_parts, chart_media, chart_kept, chart_warnings = extract_charts(path)
     images, warnings = extract_images(path)
-    warnings.extend(unsupported_warnings(path, keep_vba=is_macro))
+    warnings.extend(chart_warnings)
+    warnings.extend(unsupported_warnings(path, keep_vba=is_macro, kept_parts=chart_kept))
     warnings.extend(openpyxl_warnings)
     printer = extract_printer_settings(path)
     shapes, shape_media = extract_shapes(path)
@@ -498,6 +500,7 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
     metadata = extract_metadata(path)
     printer_files: dict[str, bytes] = {}
     media: dict[str, bytes] = dict(shape_media)
+    media.update(chart_media)
     pivots = export_pivots(wb.worksheets)
 
     sheets = []
@@ -512,7 +515,7 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
         if sheet_images:
             sheet["images"] = sheet_images
         if ws._charts:
-            sheet["charts"] = [chart_to_json(chart) for chart in ws._charts]
+            sheet["charts"] = _charts_to_json(ws, chart_sources)
         if shapes.get(ws.title):
             sheet["shapes"] = shapes[ws.title]
         if ws.title in pivots["sheets"]:
@@ -567,7 +570,7 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
     custom = _export_custom_properties(wb)
     if custom:
         workbook["customProperties"] = custom
-    chartsheets = _export_chartsheets(wb)
+    chartsheets = _export_chartsheets(wb, chart_sources)
     if chartsheets:
         workbook["chartsheets"] = chartsheets
     external_links = _export_external_links(wb)
@@ -612,5 +615,6 @@ def export_model(path: str | Path, cached_values: bool = True) -> dict[str, Any]
         "media": media,
         "pivots": pivots["files"],
         "printerSettings": printer_files,
+        "chartParts": chart_parts,
         "metadata": metadata,
     }

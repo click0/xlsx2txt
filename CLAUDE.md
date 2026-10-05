@@ -14,7 +14,7 @@ Git-friendly JSON directory layout, with full round-trip.
 - `xlsx2txt/extensions.py`, `threads.py` — `<extLst>` (sparklines, x14 rules), dynamic array cell metadata; threaded comments
 - `xlsx2txt/elements.py` — other worksheet/workbook elements openpyxl drops (`xmlElements`, schema order)
 - `xlsx2txt/xmlfrag.py` — XML fragments kept byte for byte (split children, inherited namespaces)
-- `xlsx2txt/package.py` — direct zip work: printer settings, shapes, extensions, threaded comments, background and header/footer pictures, warnings about parts that are not exported
+- `xlsx2txt/package.py` — direct zip work: printer settings, shapes, extensions, threaded comments, background and header/footer pictures, charts as stored, warnings about parts that are not exported
 - `xlsx2txt/compare.py` — semantic diff and validation
 - `xlsx2txt/text.py` — plain-text rendering for `cat` / git textconv
 - `xlsx2txt/cli.py` — `export`, `import`, `verify`, `diff`, `info`, `cat`

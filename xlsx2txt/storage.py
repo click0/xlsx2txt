@@ -11,6 +11,7 @@ Layout::
     data/theme/theme1.xml          (optional)
     data/media/image_<hash>.<ext>  (optional, images)
     data/pivots/*.xml              (optional, pivot tables and their caches)
+    data/charts/*                  (optional, chart styles, colors, shapes, embedded data)
     data/printer/printer_<hash>.bin (optional, printer driver settings)
     data/metadata.xml              (optional, cell metadata: dynamic arrays)
     vba/xl/vbaProject.bin          (optional, .xlsm only)
@@ -36,6 +37,7 @@ STYLES_DIR = "data/styles"
 THEME = "data/theme/theme1.xml"
 MEDIA_DIR = "data/media"
 PIVOTS_DIR = "data/pivots"
+CHARTS_DIR = "data/charts"
 PRINTER_DIR = "data/printer"
 METADATA = "data/metadata.xml"
 VBA_DIR = "vba"
@@ -171,6 +173,9 @@ def write_model(model: dict[str, Any], out_dir: str | Path, force: bool = False)
     for name, content in sorted((model.get("printerSettings") or {}).items()):
         files[f"{PRINTER_DIR}/{name}"] = content
 
+    for name, content in sorted((model.get("chartParts") or {}).items()):
+        files[f"{CHARTS_DIR}/{name}"] = content
+
     for name, xml in sorted((model.get("pivots") or {}).items()):
         files[f"{PIVOTS_DIR}/{name}"] = xml.encode("utf-8")
 
@@ -269,6 +274,13 @@ def read_model(in_dir: str | Path) -> dict[str, Any]:
             if path.is_file():
                 pivots[path.name] = path.read_bytes().decode("utf-8")
 
+    chart_parts = {}
+    charts_dir = in_dir / CHARTS_DIR
+    if charts_dir.is_dir():
+        for path in sorted(charts_dir.iterdir()):
+            if path.is_file():
+                chart_parts[path.name] = path.read_bytes()
+
     media = {}
     media_dir = in_dir / MEDIA_DIR
     if media_dir.is_dir():
@@ -287,6 +299,7 @@ def read_model(in_dir: str | Path) -> dict[str, Any]:
         "media": media,
         "pivots": pivots,
         "printerSettings": printer,
+        "chartParts": chart_parts,
         "metadata": metadata,
     }
 
