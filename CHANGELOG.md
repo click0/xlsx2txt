@@ -6,7 +6,7 @@ Ukrainian version: [CHANGELOG_UK.md](CHANGELOG_UK.md).
 
 ## [Unreleased]
 
-## [0.10.0] - 2026-10-31
+## [0.9.2] - 2026-10-31
 
 ### Added
 - A worksheet's background picture (Page Layout → Background) is kept:
@@ -204,8 +204,8 @@ First working version.
   checksums in `_verify/`.
 - Releases from the GitHub web interface.
 
-[Unreleased]: https://github.com/click0/xlsx2txt/compare/v0.10.0...HEAD
-[0.10.0]: https://github.com/click0/xlsx2txt/compare/v0.9.1...v0.10.0
+[Unreleased]: https://github.com/click0/xlsx2txt/compare/v0.9.2...HEAD
+[0.9.2]: https://github.com/click0/xlsx2txt/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/click0/xlsx2txt/compare/v0.8.0...v0.9.1
 [0.8.0]: https://github.com/click0/xlsx2txt/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/click0/xlsx2txt/compare/v0.6.0...v0.7.0
